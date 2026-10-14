@@ -46,7 +46,7 @@ The menu is that loop, one question per item: **Body signals** are the outcomes 
 | | Body & mind load | What each week asks of you, the 8 behind and the 4 ahead. The body: **training load**, each workout's effort on Apple's 1–10 scale (your rating in the Fitness or Workout app, else the watch's estimate) times its minutes, the same idea as Apple Fitness's Training Load; weeks ahead hold the sessions you have planned, kept apart as planned. The mind: hours of classes and work on the calendar, and the share of grade due. Each is set against your own usual weeks and never added into one number (training load and share of grade are not the same kind of thing). It names the heaviest week ahead, the weeks when body and mind were loaded together, and a week ahead whose classes or deadlines are heavier than usual while the plan still holds your usual training: the week to plan lighter. Then 42 days of training load, the last 7 days against the 4 weeks before; it makes no claim to measure the nervous system (the morning after, on Recovery, is the body's answer). |
 | | Goals | Every plan in one place: sleep, exercise, food, weight, screens, each with the last 28 days as kept / not kept / no record, counted as "n of the days with a record" (never a streak, never a score). **Set or change any goal right on the page**; a goal not set yet is listed with a button to set it. An assistant's proposals wait at the top until you accept or decline them. |
 | | Follow-up | Did yesterday's advice happen? Each piece of the Today page's advice is checked the next day against the data (asleep by the time given, phone away, dinner early enough, protein, energy, entertainment & social under the cap), with nothing to tick, and the last 14 days of each are counted ("done n of the times with a record"). When one keeps failing (3 of its last 5 times), it offers **other ways with your own numbers** instead of the same reminder: a smaller step halfway from what you have been doing, a phone setting that remembers for you (Downtime, App Limits), and an if-then plan. Training advice is listed, not checked: rebuilding it would already know that day's workouts. At the bottom, **tomorrow will be better**: what has tended to help the next day (the next morning's HRV, resting heart rate and energy after doing something against not doing it, with 95% intervals), so the page answers both "did I do it?" and "did it help?". |
-| *Data and about* | Data sources | What arrived each day for 90 days, under the device it comes from: Apple Watch (sleep, HRV, resting heart rate, VO2 max, activity minutes), iPhone (steps, weight, food log), Mac (Screen Time, with the iPhone and iPad when they share it) and files brought in by hand (self-report), each with how it reaches your computer and when the iPhone and Mac apps last did; which files have unreadable rows; how to import more. |
+| *Data and about* | Data sources | Where the data comes from, for someone looking at how the app works: four sources (Apple Watch, iPhone, Mac, you) each drawn from what it records, to how it reaches this computer, to the files it is stored as, to the pages that read it (each a link); how much has built up (months, rows, files, size, all on this computer); what stays private and what it costs; and the nine files with a line each and their span. The daily check (90 days of arrivals under each device, rows that could not be read) and the import commands are folded at the bottom, for the person whose data it is. |
 | | Overview | What it is, who it is for, the problem it answers, where the data comes from (which device collects what, how often, what it costs your computer, measured), how proactive it is today, how it compares with what people use now, the trade-offs, where it stands and what comes next. |
 | | Guide | How to use it: look around the demo, install it, bring in your Apple Health export, set your goals, and what to open each day. |
 | | [History ↗](https://tangjiakuo.top/demo/aio-history/en/) | Where this project comes from: the personal system it was taken out of, over a year and four generations, what each one found and what changed. It quotes that personal system, so it lives on the author's own site; the menu links out to it. |
@@ -69,7 +69,7 @@ The menu is that loop, one question per item: **Body signals** are the outcomes 
 </p>
 <p>
   <img src="docs/images/time.png" width="49%" alt="Stimulation page, light mode">
-  <img src="docs/images/data.png" width="49%" alt="Data sources by device, light mode">
+  <img src="docs/images/data.png" width="49%" alt="Where the data comes from: four sources to files to pages, light mode">
 </p>
 
 English and Chinese, light and dark (it follows your system), phone and desktop. On a computer the menu is a sidebar
@@ -280,7 +280,7 @@ repository contains none of that data.
 | | 身心负荷 | 每周对你提了多少要求，过去 8 周和接下来 4 周。身体：**训练负荷**，每次训练的强度分（Apple 的 1–10 分：你在健身或体能训练 App 里打的分，没有就用手表估的）乘以分钟数，思路和 Apple 健身 App 的训练负荷一样；接下来几周放的是你排了的训练，单独标成“计划”。精神：日历上课和工作的小时数，以及截止占成绩的比例。每一项各自和你平常的周比，从不加成一个数（训练负荷和占分不是一种东西）。它点出接下来最重的一周、身体和精神叠在一起的那几周，以及课或截止比平常重、训练却还照常排的那一周：该提前减量。下面是最近 42 天的训练负荷，最近 7 天和之前 4 周比；它不声称测的是神经系统（身体的回答看“恢复”页的练后第二天）。 |
 | | 目标 | 所有计划放在一处：睡眠、运动、饮食、体重、屏幕，每个目标把最近 28 天画成做到 / 没做到 / 没记录，计数写成“有记录的日子里做到几天”（不算连续天数，也不打分）。**目标可以直接在页面上设、随时改**；没设的目标列出来，旁边有“设一个”。AI 助手提的建议放在最上面，你采纳或不要之前什么都不变。 |
 | | 跟进 | 昨天的建议做到了没有？“今天”页的每条建议，第二天按数据核对（按时睡着、按时放下手机、晚饭够早、蛋白质、热量、娱乐和社交不超上限），不用你打勾；每条建议最近 14 天给了几次、有记录的那几次做到几次。同一条老做不到（最近 5 次里 3 次以上），就不再重复提醒，而是给**按你自己的数字算的其他做法**：把一步改小（取你最近的实际和目标的中间）、让手机替你记（停用时间、App 限额）、写一句“如果……就……”。训练类建议列出来但不核对：重算时已经看得到那天练了什么。最下面是**明天会更好**：做了和没做的日子，第二天早上的 HRV、静息心率和精力有什么不同（带 95% 区间）。这样这一页既回答“做到没有”，也回答“有没有用”。 |
-| *数据和说明* | 数据来源 | 90 天里每天到了什么数据，按它从哪台设备来分组：Apple Watch（睡眠、HRV、静息心率、最大摄氧量、活动分钟）、iPhone（步数、体重、饮食记录）、Mac（屏幕使用时间，打开跨设备共享后含 iPhone 和 iPad）和手动导入的文件（自评），每组写明怎么到你的电脑、iPhone App 和 Mac App 上次什么时候送到；哪些文件有读不出的行；怎么继续导入。 |
+| *数据和说明* | 数据来源 | 数据从哪来，写给想看这个应用怎么运作的人：四个来源（Apple Watch、iPhone、Mac、你自己），每个一行，从“记了什么”到“怎么到这台电脑”、“存成哪几张表”、“用在哪几页”（可以点）；攒了多少（几个月、多少行、几张表、多大，全在这台电脑上）；隐私和开销；九张表各一句说明和时间跨度。每天到了哪些（按设备 90 天、读不出的行）和导入命令折叠在最下面，留给数据的主人自己查。 |
 | | 项目说明 | 它是什么、为谁做、解决什么问题、数据从哪来（哪台设备收什么、多久一次、在你电脑上的开销，实测）、“主动”到哪一步、和现在常用的比、有意的取舍、现在到哪一步、接下来做什么。 |
 | | 使用说明 | 怎么用：先看演示，装到自己电脑上，导入 Apple 健康的导出包，设目标，以及每天该看哪里。 |
 | | [迭代记录 ↗](https://tangjiakuo.top/demo/aio-history/) | 这个项目的来历：它是从作者自己用了一年的个人系统里抽出来的；那个系统换了四代，每一代发现了什么、改了什么。它引了那个个人系统里的内容，所以放在作者自己的网站上，菜单里是一个指过去的链接。 |
@@ -303,7 +303,7 @@ repository contains none of that data.
 </p>
 <p>
   <img src="docs/images/time-zh.png" width="49%" alt="刺激水平页，深色">
-  <img src="docs/images/data-zh.png" width="49%" alt="数据来源（按设备），深色">
+  <img src="docs/images/data-zh.png" width="49%" alt="数据从哪来：四个来源到表到页面，深色">
 </p>
 
 界面中英双语，浅色和深色（默认跟随系统），手机和电脑都能用。电脑上菜单是左边的侧栏，能收成一列图标；手机上是底部的标签栏。数据来源、项目说明、使用说明和迭代记录的链接在菜单下面（手机上是顶栏的小图标）。只有你所在的那一项会展开子页，展开别的一项，前一项就收起。

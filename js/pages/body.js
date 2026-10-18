@@ -1,8 +1,8 @@
 // Weight and fitness (#body): weight against the plan's corridor, and cardio fitness (VO2 max) against your own
 // level three months ago. The rules are in modules/body.py.
-import { draw, esc, timeChart } from "../charts.js?v=11473b41ff";
-import { day, num, signed, t } from "../i18n.js?v=11473b41ff";
-import { STATE_ICON } from "../icons.js?v=11473b41ff";
+import { draw, esc, timeChart } from "../charts.js?v=93bad7f144";
+import { day, num, signed, t } from "../i18n.js?v=93bad7f144";
+import { STATE_ICON } from "../icons.js?v=93bad7f144";
 
 const kg = (v) => (v == null ? "—" : `${num(v, 1)} kg`);
 const STATUS = { on_track: "good", faster: "watch", slower: "watch", reached: "good" };

@@ -1,27 +1,27 @@
 // Shell: the menu (a left sidebar that folds to icons, a bottom tab bar on phones), language and light/dark,
 // hash routing (#today, #today/2026-10-11).
-import { get, isStatic } from "./api.js?v=11473b41ff";
-import { installTooltip, esc, setFormat } from "./charts.js?v=11473b41ff";
-import { getLang, setLang, t, clock, dur, measure, shortDay, toDate, wtype } from "./i18n.js?v=11473b41ff";
-import { icon } from "./icons.js?v=11473b41ff";
-import { mountPrompt } from "./trained.js?v=11473b41ff";
-import { loadUpdate, mountUpdate, updateNote } from "./update.js?v=11473b41ff";
-import body from "./pages/body.js?v=11473b41ff";
-import data from "./pages/data.js?v=11473b41ff";
-import drain from "./pages/drain.js?v=11473b41ff";
-import exercise from "./pages/exercise.js?v=11473b41ff";
-import followup from "./pages/followup.js?v=11473b41ff";
-import load from "./pages/load.js?v=11473b41ff";
-import recovery from "./pages/recovery.js?v=11473b41ff";
-import food from "./pages/food.js?v=11473b41ff";
-import goals from "./pages/goals.js?v=11473b41ff";
-import guide from "./pages/guide.js?v=11473b41ff";
-import kit from "./pages/kit.js?v=11473b41ff";
-import project from "./pages/project.js?v=11473b41ff";
-import sleep from "./pages/sleep.js?v=11473b41ff";
-import time from "./pages/time.js?v=11473b41ff";
-import today from "./pages/today.js?v=11473b41ff";
-import week from "./pages/week.js?v=11473b41ff";
+import { get, isStatic } from "./api.js?v=93bad7f144";
+import { installTooltip, esc, setFormat } from "./charts.js?v=93bad7f144";
+import { getLang, setLang, t, clock, dur, measure, shortDay, toDate, wtype } from "./i18n.js?v=93bad7f144";
+import { icon } from "./icons.js?v=93bad7f144";
+import { mountPrompt } from "./trained.js?v=93bad7f144";
+import { loadUpdate, mountUpdate, updateNote } from "./update.js?v=93bad7f144";
+import body from "./pages/body.js?v=93bad7f144";
+import data from "./pages/data.js?v=93bad7f144";
+import drain from "./pages/drain.js?v=93bad7f144";
+import exercise from "./pages/exercise.js?v=93bad7f144";
+import followup from "./pages/followup.js?v=93bad7f144";
+import load from "./pages/load.js?v=93bad7f144";
+import recovery from "./pages/recovery.js?v=93bad7f144";
+import food from "./pages/food.js?v=93bad7f144";
+import goals from "./pages/goals.js?v=93bad7f144";
+import guide from "./pages/guide.js?v=93bad7f144";
+import kit from "./pages/kit.js?v=93bad7f144";
+import project from "./pages/project.js?v=93bad7f144";
+import sleep from "./pages/sleep.js?v=93bad7f144";
+import time from "./pages/time.js?v=93bad7f144";
+import today from "./pages/today.js?v=93bad7f144";
+import week from "./pages/week.js?v=93bad7f144";
 
 // the design kit gallery (#kit) is a page but not a menu item: the footer of every page and the Data page link to it
 const PAGES = { today, week, body, recovery, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };

@@ -4,11 +4,11 @@
 // in (five Screen Time signals) and what the body does next (sleep, HRV, resting heart rate), and says plainly that
 // the second is an association. The numbers and rules are in modules/time.py. One answer card, then the long view,
 // then the body, then the detail in tabs (a typical day, devices at once, where it came from).
-import { bullet, draw, esc, lanes, timeChart } from "../charts.js?v=11473b41ff";
-import { day, device, dur, getLang, num, t } from "../i18n.js?v=11473b41ff";
-import { icon, STATE_ICON } from "../icons.js?v=11473b41ff";
-import { compareHtml, mountCompare } from "./effects.js?v=11473b41ff";
-import { mountTabs, tabs } from "./tabs.js?v=11473b41ff";
+import { bullet, draw, esc, lanes, timeChart } from "../charts.js?v=93bad7f144";
+import { day, device, dur, getLang, num, t } from "../i18n.js?v=93bad7f144";
+import { icon, STATE_ICON } from "../icons.js?v=93bad7f144";
+import { compareHtml, mountCompare } from "./effects.js?v=93bad7f144";
+import { mountTabs, tabs } from "./tabs.js?v=93bad7f144";
 
 const SCREEN_PARTS = [["fun", "var(--c-fun)"], ["focus", "var(--c-focus)"], ["communication", "var(--c-comms)"], ["other", "var(--c-other)"]];
 const KEYS = ["fun", "before_sleep", "switches", "ratio", "longest_focus"];

@@ -1,11 +1,11 @@
 // Today: one card for the morning (the day ring, how recovered you are, what is on, tonight, and what to adjust), then
 // every other part of your health in one line each. Numbers and a state only: the sentences that explain them live on
 // each part's own page, one click away, so a first look takes seconds.
-import { dayRing, draw, esc, RING_CATS, spark } from "../charts.js?v=11473b41ff";
-import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js?v=11473b41ff";
-import { COLOR, icon, STATE_ICON } from "../icons.js?v=11473b41ff";
-import { worseLine } from "./drain.js?v=11473b41ff";
-import { helping } from "./effects.js?v=11473b41ff";
+import { dayRing, draw, esc, RING_CATS, spark } from "../charts.js?v=93bad7f144";
+import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js?v=93bad7f144";
+import { COLOR, icon, STATE_ICON } from "../icons.js?v=93bad7f144";
+import { worseLine } from "./drain.js?v=93bad7f144";
+import { helping } from "./effects.js?v=93bad7f144";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const chip = (cls, text, glyph = "") => `<span class="chip ${cls}">${glyph}${esc(text)}</span>`;

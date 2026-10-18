@@ -1,8 +1,8 @@
-import { esc, draw, spark } from "./charts.js?v=11473b41ff";
-import { day, num, measure, t, toDate, wtype } from "./i18n.js?v=11473b41ff";
-import { icon } from "./icons.js?v=11473b41ff";
-import { rv } from "./recovery-copy.js?v=11473b41ff";
-import { mountBody } from "./recovery-model.js?v=11473b41ff";
+import { esc, draw, spark } from "./charts.js?v=93bad7f144";
+import { day, num, measure, t, toDate, wtype } from "./i18n.js?v=93bad7f144";
+import { icon } from "./icons.js?v=93bad7f144";
+import { rv } from "./recovery-copy.js?v=93bad7f144";
+import { mountBody } from "./recovery-model.js?v=93bad7f144";
 
 // All figures below come from existing records. No rescaling and no synthetic ETA.
 export function sorenessSummary(levels, known) {
@@ -77,7 +77,7 @@ export function overviewHtml(p) {
       <div class="ov-legend"><span class="ov-sore-legend"><i class="ov-yellow-key"></i>${rv("light")} → ${rv("heavy")}</span><span class="ov-sore-legend"><i class="ov-none-key"></i>${rv("none")}</span><span class="ov-trained-legend" hidden><i class="ov-trained-key"></i>${rv("trainingLegend")}</span><span><i class="ov-unknown-key"></i>${rv("unknown")}</span></div>
       <div class="ov-region-picker"><label for="ov-region">${rv("select")}</label><select id="ov-region"><option value="">${rv("choose")}</option>${p.regions.map(r => `<option value="${esc(r)}">${t(`sore.region.${r}`)}</option>`).join("")}</select></div>
       <div class="ov-selection" aria-live="polite"><p>${rv("selectPrompt")}</p></div>
-      <p class="ov-model-note">${rv("scope")}</p><details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><p>BodyParts3D © The Database Center for Life Science · CC BY 4.0. Geometry adapted by Human Atlas and Health AIO.</p><a href="models/recovery/ATTRIBUTION.md" target="_blank" rel="noopener">Attribution ↗</a></details>
+      <p class="ov-model-note">${rv("scope")}</p><details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><a href="models/recovery/ILLUSTRATION.md" target="_blank" rel="noopener">${rv("modelCredit")} ↗</a></details>
     </section>
     <div class="ov-states"><section class="ov-metric ov-sore-card">${soreCard(p)}</section><section class="ov-metric ov-energy-card">${energyCard(p)}</section>${cardioCard(p)}<p class="ov-ring-key">${rv("ringKey")}</p></div>
     </div>${related(p)}</section>`;
@@ -114,7 +114,7 @@ export function mountOverview(root, p, { onLevel, openEditor }) {
     wrap.querySelectorAll("[data-ov-view]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.ovView === view)));
     wrap.querySelectorAll(".ov-sore-legend").forEach(x => { x.hidden = view !== "sore"; }); wrap.querySelector(".ov-trained-legend").hidden = view !== "trained"; repaint();
   }; });
-  wrap.querySelectorAll("[data-ov-turn]").forEach(b => { b.onclick = () => model?.rotate(Number(b.dataset.ovTurn) * Math.PI / 6); });
+  wrap.querySelectorAll("[data-ov-turn]").forEach(b => { b.onclick = () => model?.rotate(Number(b.dataset.ovTurn)); });
   wrap.querySelector(".ov-front").onclick = () => model?.reset();
   wrap.querySelectorAll("[data-ov-evidence]").forEach(a => { a.onclick = event => { event.preventDefault(); const detail = wrap.querySelector(".ov-evidence"); detail.open = true; detail.scrollIntoView({ block: "nearest", behavior: "smooth" }); detail.querySelector("summary").focus(); }; });
   const C = p.cardio;

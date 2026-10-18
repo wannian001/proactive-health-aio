@@ -148,7 +148,10 @@ class Tokens(unittest.TestCase):
 
     def test_every_variable_the_app_uses_is_defined(self):
         for path in [p for p in WEB.rglob("*") if p.suffix in (".css", ".js", ".html")]:
-            missing = used_vars(path.read_text(encoding="utf-8")) - self.light
+            text = path.read_text(encoding="utf-8")
+            # Page-scoped CSS may declare its own properties without changing the exported kit.
+            local = set(re.findall(r"(--[\w-]+)\s*:", text)) if path.suffix == ".css" else set()
+            missing = used_vars(text) - self.light - local
             self.assertFalse(missing, f"{path.name} uses undefined {sorted(missing)}")
 
     def test_kit_css_spacing_and_corners_use_the_tokens(self):
@@ -187,7 +190,7 @@ class Isolation(unittest.TestCase):
 
     def test_index_loads_tokens_then_kit_then_app(self):
         links = re.findall(r'<link rel="stylesheet" href="([^"]+)"', read("index.html"))
-        self.assertEqual(links, ["css/tokens.css", "css/kit.css", "css/app.css"])
+        self.assertEqual(links, ["css/tokens.css", "css/kit.css", "css/app.css", "css/recovery-overview.css"])
 
     def test_pages_use_the_kit_drawings(self):
         self.assertIn("rangeStrip(", read("js/pages/drain.js"))

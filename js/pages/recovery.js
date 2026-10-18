@@ -4,13 +4,15 @@
 // a button per level), the score the morning after each training day (four parts side by side, averaged, with what
 // it trained and how sore that was), and how your body has answered training. What training asked of you is on
 // Body & mind load. The rules are in modules/recovery.py.
-import { isStatic, post } from "../api.js?v=2a288595f6";
-import { bullet, draw, esc, scoreDots } from "../charts.js?v=2a288595f6";
-import { figureSvg, mountFigure } from "../figure.js?v=2a288595f6";
-import { day, dur, measure, num, shortDay, t, toDate, wtype } from "../i18n.js?v=2a288595f6";
-import { icon, STATE_ICON } from "../icons.js?v=2a288595f6";
-import { openTrained } from "../trained.js?v=2a288595f6";
-import { compareHtml, mountCompare } from "./effects.js?v=2a288595f6";
+import { isStatic, post } from "../api.js?v=11473b41ff";
+import { bullet, draw, esc, scoreDots } from "../charts.js?v=11473b41ff";
+import { figureSvg, mountFigure } from "../figure.js?v=11473b41ff";
+import { day, dur, measure, num, shortDay, t, toDate, wtype } from "../i18n.js?v=11473b41ff";
+import { icon, STATE_ICON } from "../icons.js?v=11473b41ff";
+import { openTrained } from "../trained.js?v=11473b41ff";
+import { compareHtml, mountCompare } from "./effects.js?v=11473b41ff";
+import { overviewHtml, mountOverview } from "../recovery-overview.js?v=11473b41ff";
+import { rv } from "../recovery-copy.js?v=11473b41ff";
 
 const toneCls = (tone) => (tone === "good" ? "good" : tone === "bad" ? "bad" : "");
 const LOAD_TONE = { high: "watch", low: "", steady: "good" };
@@ -171,10 +173,10 @@ function sorenessHtml(p) {
 
 export default {
   render(p) {
-    return `<div class="head"><div><h1>${t("rec.title")}</h1><div class="sub">${t("rec.sub")}</div></div></div>
+    return `<div class="head"><div><h1>${rv("title")}</h1><div class="sub">${rv("sub")}</div></div></div>
+      ${overviewHtml(p)}
       <div class="grid">
-        ${heroHtml(p)}
-        ${sorenessHtml(p)}
+        <details class="card span-12 rec-checkin"><summary>${rv("editor")}</summary>${sorenessHtml(p)}</details>
         ${afterHtml(p)}
         ${responseHtml(p)}
         <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary>
@@ -200,13 +202,19 @@ export default {
     // a level directly, and both stay in step
     const levels = { ...(S.today ? S.levels : {}) };
     const svg = root.querySelector(".sore-layout .fig");
+    let overview;
     const set = (r, lv) => {
       if (lv) levels[r] = lv; else delete levels[r];
       const g = svg.querySelector(`.fig-region[data-region="${r}"]`);
       g.style.fill = fill(lv);
       g.setAttribute("aria-label", soreLabel(r, lv));
       root.querySelectorAll(`.lvl-btn[data-region="${r}"]`).forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.level) === (lv || 0))));
+      overview?.setLevels(levels);
     };
+    overview = mountOverview(root, p, { onLevel: set, openEditor() {
+      const details = root.querySelector(".rec-checkin"); details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "start" }); details.querySelector("summary").focus();
+    } });
     mountFigure(svg, p, { tap: (r) => set(r, ((levels[r] || 0) + 1) % 4), tip: (r) => `${t(`sore.region.${r}`)} · ${t(`sore.level.${levels[r] || 0}`)}` });
     root.querySelectorAll(".lvl-btn").forEach((b) => { b.onclick = () => set(b.dataset.region, Number(b.dataset.level)); });
     // a training day with nothing written about what it trained: the same dialog as the prompt after a workout
@@ -224,7 +232,7 @@ export default {
         root.querySelectorAll(".feel-btn").forEach((x) => x.setAttribute("aria-pressed", String(Number(x.dataset.feel) === feel)));
       };
     });
-    root.querySelector("#sore-clear").onclick = () => { Object.keys(levels).forEach((r) => set(r, 0)); };
+    root.querySelector("#sore-clear").onclick = () => { Object.keys(levels).forEach((r) => set(r, 0)); overview?.setLevels(levels); };
     const msg = root.querySelector(".sore-msg");
     root.querySelector("#sore-save").onclick = async () => {
       if (isStatic) return;

@@ -1,8 +1,8 @@
 // Wear and tear (#drain): seven quiet signals over the last 7 days, in three groups (what the body already shows,
 // sleep timing, screen habits), each against your normal and, where set, your plan.
 // No total score: the signals have different units and different strength of evidence.
-import { draw, esc, legendKey, rangeStrip, trendLine } from "../charts.js?v=2a288595f6";
-import { day, dur, inSentence, num, shortDay, t } from "../i18n.js?v=2a288595f6";
+import { draw, esc, legendKey, rangeStrip, trendLine } from "../charts.js?v=11473b41ff";
+import { day, dur, inSentence, num, shortDay, t } from "../i18n.js?v=11473b41ff";
 
 const STATUS = { bad: "bad", good: "good", neutral: "" };
 const clockOf = (noon) => { const m = ((Math.round(noon + 720) % 1440) + 1440) % 1440; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };

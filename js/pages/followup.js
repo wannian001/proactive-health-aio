@@ -2,11 +2,11 @@
 // of each piece of advice; and, for advice that keeps not happening, other ways to do it with the person's own
 // numbers instead of the same reminder again; and "tomorrow will be better": what has gone with a better next day
 // (the list that used to be on Weekly review). The rules are in modules/followup.py.
-import { draw, esc } from "../charts.js?v=2a288595f6";
-import { clock, day, dur, num, shortDay, t } from "../i18n.js?v=2a288595f6";
-import { COLOR, icon, STATE_ICON } from "../icons.js?v=2a288595f6";
-import { effectsHtml, mountEffects } from "./effects.js?v=2a288595f6";
-import { TODO_ICON, todoTitle } from "./today.js?v=2a288595f6";
+import { draw, esc } from "../charts.js?v=11473b41ff";
+import { clock, day, dur, num, shortDay, t } from "../i18n.js?v=11473b41ff";
+import { COLOR, icon, STATE_ICON } from "../icons.js?v=11473b41ff";
+import { effectsHtml, mountEffects } from "./effects.js?v=11473b41ff";
+import { TODO_ICON, todoTitle } from "./today.js?v=11473b41ff";
 
 const hours = (h) => num(h, Number.isInteger(h) ? 0 : 1);
 

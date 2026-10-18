@@ -1,0 +1,24 @@
+{
+  "id": "FJ2810",
+  "name": "Skin",
+  "bounds": [
+    [
+      -0.33411900000000005,
+      1.3877787807814457e-17,
+      -0.1452476
+    ],
+    [
+      0.332825,
+      1.7194711999999999,
+      0.146783
+    ]
+  ],
+  "vertexCount": 22902,
+  "indexCount": 134232,
+  "source": "BodyParts3D 4.0 via Human Atlas",
+  "sourceRevision": "1c38bf35c254a891200d3cedecfd57abebe83d8d",
+  "positions": 0,
+  "normals": 274824,
+  "indices": 412236,
+  "sha256": "4a8d6c96029905d9c39f282fabfd2335b6067b4b1dc9605729ae85ab56e7cd9c"
+}

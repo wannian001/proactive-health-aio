@@ -2,8 +2,8 @@
 // Numbered steps in the order you meet them, in one card, each opening on a click; commands are the ones in the README's Quick start
 // and companion-app sections. The server only
 // names the page (modules/docs.py).
-import { esc } from "../charts.js?v=2a288595f6";
-import { getLang, t } from "../i18n.js?v=2a288595f6";
+import { esc } from "../charts.js?v=11473b41ff";
+import { getLang, t } from "../i18n.js?v=11473b41ff";
 
 const CODE = {
   install: ["git clone https://github.com/wannian001/proactive-health-aio.git", "cd proactive-health-aio", "python3 -m healthaio serve --demo"],

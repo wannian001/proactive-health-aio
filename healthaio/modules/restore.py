@@ -151,7 +151,8 @@ def share(b):
     return (b["better"] + b["glad"]) / (2 * b["answered"]) if b["answered"] >= MIN_ANSWERED else -1
 
 
-def build(ctx, day=None):
+def build(ctx, day=None, rhythm=False):
+    """The shared Rest & rewards payload; with `rhythm` (the page itself) also the long view (modules/focus.py)."""
     current = restore_log.replay(restore_log.read(ctx.cfg))
     rows = tried(current["sessions"])
     s = situation(ctx, current)
@@ -164,4 +165,9 @@ def build(ctx, day=None):
             "sessions": [x for x in current["sessions"] if x["status"] != "removed"][:30], "tried": rows,
             "rewards": [r for r in current["rewards"] if r["status"] == "planned"] +
                        [r for r in current["rewards"] if r["status"] != "planned"][:30],
-            "activities": order}
+            "activities": order, **({"rhythm": _rhythm(ctx)} if rhythm else {})}
+
+
+def _rhythm(ctx):
+    from .focus import rhythm
+    return rhythm(ctx)

@@ -12,7 +12,7 @@ PAGES: Dict[str, Callable[..., Dict[str, Any]]] = {
     "body": lambda ctx, param=None: body.build(ctx, day=param),
     "sleep": lambda ctx, param=None: sleep.build(ctx, day=param),
     "recovery": lambda ctx, param=None: recovery.build(ctx, day=param),
-    "restore": lambda ctx, param=None: restore.build(ctx),
+    "restore": lambda ctx, param=None: restore.build(ctx, rhythm=True),
     # not a page: what every page asks after a strength or hard workout (the popup; modules/recovery.py)
     "prompt": lambda ctx, param=None: recovery.prompt(ctx),
     # not pages either: the reminder after a long stretch at the computer (modules/sitting.py), and the short moves it

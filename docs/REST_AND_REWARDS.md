@@ -64,3 +64,12 @@
 Run the ledger / policy / HTTP boundary tests with `python3 -m unittest discover -s tests -p 'test_restore.py'`.
 Existing page, recovery, follow-up, load and documentation tests exercise their shared payloads and static export.
 Browser checks should use `serve --demo`, never real health records: check-in → start → refresh → finish → optional feedback → follow-up; celebration planning; quiet/resume; keyboard focus; Chinese/English; 390 px and desktop; both themes.
+
+## 专注额度与可持续的节奏（2026-10-19）
+
+规则和参数在 `healthaio/modules/focus.py` 开头。
+
+- **深度专注**：屏幕使用时间里工作或学习类应用一口气 25 分钟以上的段（中间离开不到 3 分钟不算断），每段加起来。手机穿插进来的那几分钟会打断连续段：一分钟在手机上，就是一分钟不在工作上。没有设备能测“创造力”或“脑力”，深度专注是能测到的最接近的东西。
+- **专注额度**（恢复页第三个圈）：过去 90 天里和这天最像的 10 天你实际做到多少深度专注，按昨晚睡眠和今早 HRV（相对它自己 28 天的平常）找最像的，工作日只和工作日比（够 7 天时）；中位数是额度，中间一半是范围。少于 7 天就不给额度。今天已做的深度专注填进圈里，旁边写屏幕时间截至几点。工作和学习类应用上用了 30 分钟以上、却没有一段满 25 分钟时，卡片直接说“总被打断”。
+- **可持续的节奏**（休息与奖励页，`#restore/rhythm`）：回看 56 天，每天的额度只用这天之前的数据算。超额度 = 比范围上沿还多、且至少 30 分钟；按时起身 = 没有连续超过 90 分钟的一段，或那天记过一次休息；守住节奏的一天 = 没超额度且按时起身；节奏稳的一周 = 至少 5 天能判断、其中 5 天守住。连续 3 天超额度，建议把接下来三天里课和工作最少的半天留空；连续 3 周节奏稳，出一个庆祝计划（写进 `restore.jsonl` 的 `reward_plan`，带 `for: rhythm`，每一轮只出一次）。今天页的“今天该调整的”里也会出现这两种提醒。
+- 奖励的是守住节奏，不是做得多：做得比额度多不加分，休息仍然不需要挣。

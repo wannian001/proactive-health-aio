@@ -73,6 +73,15 @@ export function nowLine(p) {
     <a href="#recovery/now">${t("now.link")} ›</a></p>`;
 }
 
+// Today: the rhythm's line (modules/focus.py), when days in a row went over the focus budget or the rhythm held for weeks
+export function rhythmItem(R) {
+  if (!R || (R.over_run < 3 && !R.reward_ready)) return "";
+  const over = R.over_run >= 3;
+  const why = over ? (R.light ? t("rhythm.over_why", { when: t("rhythm.when", { day: day(R.light.date), half: t(`rhythm.half.${R.light.half}`) }) }) : t("rhythm.over_why_none")) : t("rhythm.ready_why");
+  return `<a class="todo-item todo-now" href="#restore/rhythm"><span class="todo-icon">${activityIcon(over ? "sleep" : "gift", 20)}</span>
+    <span class="todo-body"><span class="eyebrow">${t("rhythm.eyebrow")}</span><b>${esc(t(over ? "rhythm.over_title" : "rhythm.ready_title", { n: over ? R.over_run : R.streak }))}</b><span class="small muted">${esc(why)}</span></span></a>`;
+}
+
 // Today's "what to adjust" opens with this, when there is something to say right now
 export function nowItem(p) {
   const sg = p?.situation?.suggest;

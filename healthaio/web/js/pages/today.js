@@ -6,7 +6,7 @@ import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js";
 import { COLOR, icon, STATE_ICON } from "../icons.js";
 import { worseLine } from "./drain.js";
 import { helping } from "./effects.js";
-import { nowItem, nowLine, quietSuggestion } from "../restore-ui.js";
+import { nowItem, nowLine, quietSuggestion, rhythmItem } from "../restore-ui.js";
 import { askHtml, mountAsk } from "../care-ui.js";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
@@ -89,7 +89,7 @@ function todoWhy(x) {
 // what to adjust today, opened by what Rest & rewards says right now (if anything): that line is about this moment,
 // so it is not one of the three
 function todoHtml(p) {
-  const a = p.actions, now = nowItem(p.restore);
+  const a = p.actions, now = nowItem(p.restore) + rhythmItem(p.rhythm);
   if ((!a || (!a.steady && !a.items.length)) && !now) return "";
   const body = !a || (!a.steady && !a.items.length) ? "" : a.steady ? `<p class="lede" style="font-size:var(--t-lg);margin:0">${t("todo.steady")}</p>`
     : `<ol class="todo">${a.items.map((x) => `<li><a class="todo-item" href="${x.link}">

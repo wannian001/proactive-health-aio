@@ -84,7 +84,7 @@ def replay(entries):
                 s.update(status="finished" if op == "finish" else "cancelled", ended_at=e["at"])
         elif op == "reward_plan":
             out["rewards"][e["id"]] = {"id": e["id"], "title": e["title"], "note": e["note"],
-                                         "at": e["at"], "status": "planned", "ended_at": None}
+                                         "at": e["at"], "status": "planned", "ended_at": None, "for": e.get("for")}
         elif op in ("reward_done", "reward_cancel"):
             r = out["rewards"].get(e["ref"])
             if not r:
@@ -111,7 +111,7 @@ def from_browser(cfg, request, now=None):
     op = request["op"]
     allowed = {"op", "request_id"} | {
         "checkin": set(CHOICES), "start": {"activity"}, "finish": {"ref"}, "cancel": {"ref"},
-        "feedback": {"ref", "change", "enjoyment"}, "reward_plan": {"title", "note"},
+        "feedback": {"ref", "change", "enjoyment"}, "reward_plan": {"title", "note", "for"},
         "reward_done": {"ref"}, "reward_cancel": {"ref"}, "remove": {"ref"},
     }.get(op, set())
     if request.keys() - allowed:
@@ -167,8 +167,10 @@ def from_browser(cfg, request, now=None):
                 raise ValueError("only a break the app wrote down can be taken back; refresh the page")
             event["ref"] = s["id"]
         elif op == "reward_plan":
+            if request.get("for") not in (None, "rhythm"):
+                raise ValueError("a celebration is for nothing in particular, or for the rhythm")
             event.update(title=_text(request.get("title"), "title", True),
-                         note=_text(request.get("note", ""), "note"))
+                         note=_text(request.get("note", ""), "note"), **({"for": "rhythm"} if request.get("for") else {}))
         elif op in ("reward_done", "reward_cancel"):
             reward = next((r for r in current["rewards"] if r["id"] == request.get("ref")), None)
             if not reward or reward["status"] != "planned":

@@ -1000,3 +1000,12 @@ main > .subnav a { flex: none; white-space: nowrap; }
 /* the long view at the end of Recovery: its dates beside the heading, smaller and apart */
 .rec-long { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
 .rec-long .aside { font-size: var(--t-sm); font-weight: 500; color: var(--ink-3); letter-spacing: 0; }
+
+/* The focus budget gauge (focus blue; over budget turns to watch) and the rhythm card on Rest & rewards */
+.ov-focus .ov-arc { stroke: var(--c-focus); }
+.ov-focus.over .ov-arc { stroke: var(--watch); }
+.ov-focus-card .ov-tag { color: var(--accent); background: var(--accent-soft); }
+.rhythm-reward { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 10px 0 0; padding: 12px 14px; border-radius: var(--r-md); background: var(--good-soft); }
+.rhythm-reward > div { display: grid; gap: 2px; }
+.rhythm-reward .rr-msg { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 520px) { .rhythm-reward { grid-template-columns: auto minmax(0, 1fr); } .rhythm-reward .rr-button { grid-column: 1 / -1; } }

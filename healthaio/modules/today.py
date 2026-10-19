@@ -258,6 +258,12 @@ def self_report(ctx: Context, day: date) -> Optional[Dict[str, Any]]:
             "feel": row.get("feel") if row["date"] == day else None, "energy_now": rated}
 
 
+def _rhythm_line(ctx: Context) -> Dict[str, Any]:
+    from .focus import rhythm
+    r = rhythm(ctx)
+    return {k: r[k] for k in ("over_run", "reward_ready", "light", "streak", "to_reward")}
+
+
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     picked = date.fromisoformat(day) if day else ctx.today
     if picked > ctx.today:
@@ -276,7 +282,8 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
         "actions": None if picked != ctx.today else actions.build(ctx, picked, rec, drain_card),
         "self": self_report(ctx, picked),
         "sitting": sitting.light(ctx, picked),
-        "care_ask": care.build(ctx, picked)["ask"] if picked == ctx.today else [],  # yesterday's tight spots: how now?
+        "care_ask": care.build(ctx, picked)["ask"] if picked == ctx.today else [],
+        "rhythm": _rhythm_line(ctx) if picked == ctx.today else None,  # over budget days in a row, or a rhythm to celebrate  # yesterday's tight spots: how now?
         "activity": activity(ctx, picked),
         "attention": att,
         "week": week_load(ctx, picked),

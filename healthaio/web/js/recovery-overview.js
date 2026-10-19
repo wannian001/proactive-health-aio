@@ -1,5 +1,5 @@
 import { esc } from "./charts.js";
-import { day, num, rv, t, toDate, wtype } from "./i18n.js";
+import { clock, day, dur, num, rv, t, toDate, wtype } from "./i18n.js";
 import { mountBody } from "./recovery-model.js";
 import { forecastHtml, forecastText, forecastTarget } from "./recovery-forecast.js";
 
@@ -59,6 +59,27 @@ function energyCard(p) {
       ${forecastHtml(p, "energy")}<a class="ov-text-link" href="#recovery/now">${t("now.link")} ↓</a></div>`;
 }
 
+// the third gauge: the focus budget (modules/focus.py), what you managed on the days most like today, filled by
+// today's deep focus so far; hours on the ring, words beside it
+function focusCard(p) {
+  const F = p.focus;
+  if (!F) return "";
+  const B = F.budget, used = F.used, hours = (m) => Math.round(m / 6) / 10;
+  const gauge = ring(B && used != null ? hours(used) : NaN, B ? Math.max(0.1, hours(B.middle)) : 1, t("focus.ring"),
+    !B ? t("focus.no_budget") : F.state ? t(`focus.state.${F.state}`) : t("focus.no_today"), `ov-focus${F.state === "over" ? " over" : ""}`, null);
+  const what = B ? [B.sleep != null ? t("focus.by_sleep", { d: dur(B.sleep) }) : "", B.hrv != null ? t("focus.by_hrv", { pct: Math.round(B.hrv * 100) }) : ""].filter(Boolean).join(t("ui.list_sep")) : "";
+  const lede = B ? t("focus.lede", { used: used == null ? t("focus.none") : dur(used), mid: dur(B.middle), lo: dur(B.low), hi: dur(B.high) }) : t("focus.need_days", { n: F.rule.min_days });
+  // plenty of work and no deep focus: something kept breaking it up
+  const broken = used != null && used < F.rule.deep_min && (F.focus_min || 0) >= 30 ? t("focus.broken", { total: dur(F.focus_min), longest: dur(F.longest || 0), d: F.rule.deep_min }) : "";
+  return `<section class="ov-metric ov-focus-card">${gauge}
+    <div class="ov-card-copy"><div class="ov-card-title"><h2>${t("focus.title")}</h2><span class="ov-tag">${t("focus.tag")}</span></div>
+      <p class="ov-description">${esc(lede)}</p>
+      ${broken ? `<p class="ov-secondary focus-broken">${esc(broken)}</p>` : ""}
+      ${B ? `<p class="ov-secondary">${esc(t("focus.basis", { h: F.rule.history, n: B.days, what: what || t("focus.by_nothing"), week: t(B.weekend ? "focus.weekends" : "focus.weekdays") }))}</p>` : ""}
+      ${F.as_of ? `<p class="ov-secondary">${esc(t("focus.as_of", { at: clock(F.as_of) }))}</p>` : ""}
+      <a class="ov-text-link" href="#restore/rhythm">${t("focus.to_rhythm")} →</a></div></section>`;
+}
+
 export function overviewHtml(p) {
   return `<section class="rec-overview" aria-label="${rv("title")}"><div class="ov-layout">
     <section class="ov-body-panel"><div class="ov-body-head"><h2>${rv("muscles")}</h2><div class="ov-view-switch" role="group" aria-label="${rv("muscles")}">
@@ -70,7 +91,7 @@ export function overviewHtml(p) {
       <div class="ov-selection" aria-live="polite"><p>${rv("selectPrompt")}</p></div>
       <details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><a href="models/recovery/ILLUSTRATION.md" target="_blank" rel="noopener">${rv("modelCredit")} ↗</a></details>
     </section>
-    <div class="ov-states"><section class="ov-metric ov-sore-card">${soreCard(p)}</section><section class="ov-metric ov-energy-card">${energyCard(p)}</section></div>
+    <div class="ov-states"><section class="ov-metric ov-sore-card">${soreCard(p)}</section><section class="ov-metric ov-energy-card">${energyCard(p)}</section>${focusCard(p)}</div>
     </div></section>`;
 }
 

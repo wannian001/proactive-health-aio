@@ -16,6 +16,7 @@ import recovery from "./pages/recovery.js";
 import restore from "./pages/restore.js";
 import { quietSuggestion } from "./restore-ui.js";
 import { startNudges } from "./nudge.js";
+import { mountInfo } from "./info.js";
 import food from "./pages/food.js";
 import goals from "./pages/goals.js";
 import guide from "./pages/guide.js";
@@ -185,6 +186,7 @@ async function route(event) {
     main.innerHTML = updateNote() + sub + PAGES[page].render(data) + footer();
     mountUpdate(main);
     PAGES[page].mount?.(main, data);
+    mountInfo(main);  // "how it's worked out" as an i on each card (info.js)
     if (focus) main.querySelector(`#${focus}`)?.scrollIntoView({ block: "start" });
     askNudge?.();
     if (event?.type === "healthaio:restore-saved") {

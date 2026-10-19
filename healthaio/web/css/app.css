@@ -1009,3 +1009,15 @@ main > .subnav a { flex: none; white-space: nowrap; }
 .rhythm-reward > div { display: grid; gap: 2px; }
 .rhythm-reward .rr-msg { grid-column: 1 / -1; margin: 0; }
 @media (max-width: 520px) { .rhythm-reward { grid-template-columns: auto minmax(0, 1fr); } .rhythm-reward .rr-button { grid-column: 1 / -1; } }
+
+/* "How it's worked out" as an i on the card (info.js), opening a small panel, instead of a fold under every card */
+.info-btn { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-3); cursor: pointer; vertical-align: middle; }
+.info-btn:hover, .info-btn[aria-expanded="true"] { background: var(--surface-2); color: var(--ink); }
+.info-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.info-group { display: inline-flex; align-items: center; gap: 6px; }
+.info-title { margin-left: 10px; width: 30px; height: 30px; position: relative; top: -2px; }
+.has-info { position: relative; }
+.info-corner { position: absolute; top: 12px; right: 12px; }
+.info-pop { position: absolute; z-index: 60; width: min(420px, calc(100vw - 24px)); max-height: 60vh; overflow: auto; padding: 14px 16px; border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow), 0 0 0 1px var(--line); font-size: var(--t-sm); line-height: 1.6; color: var(--ink-2); }
+.info-pop-title { display: block; margin-bottom: 4px; color: var(--ink); }
+.info-pop p { margin: 6px 0 0; }

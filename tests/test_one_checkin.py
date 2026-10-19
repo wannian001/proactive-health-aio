@@ -99,6 +99,14 @@ class FoldedPages(unittest.TestCase):
         self.assertEqual([share(b) for b in tried], sorted((share(b) for b in tried), reverse=True))
 
 
+class InfoButtons(unittest.TestCase):
+    def test_how_it_is_worked_out_is_an_i_on_the_card_not_a_fold_under_it(self):
+        self.assertIn("mountInfo(main);", read("js/app.js"))
+        js = read("js/info.js")
+        self.assertIn('new Set([t("ui.how"), t("rr.rules")])', js)  # only the explanations move; other folds are content
+        self.assertIn('card.remove()', js)                           # a card that held only the explanation goes away
+
+
 class WordsAndFiles(unittest.TestCase):
     def test_words_live_in_i18n(self):
         for gone in ("js/recovery-copy.js", "js/restore-text.js"):

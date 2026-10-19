@@ -34,6 +34,7 @@ final class AppController: NSObject, NSApplicationDelegate, AppActions {
     private lazy var scheduler = Scheduler(quick: ProcessInfo.processInfo.environment["HEALTHAIO_MAC_QUICKSTART"] == "1")
     private lazy var updates = UpdateManager(model: model)
     private lazy var iphone = IPhoneManager(model: model)
+    private let sitting = SittingWatch()
     private var status: StatusController?
     private var pairWindow: PairWindowController?
     private var settingsWindow: SettingsWindowController?
@@ -66,6 +67,7 @@ final class AppController: NSObject, NSApplicationDelegate, AppActions {
         updates.restartServer = { [weak self] in self?.restartServer() }
         updates.refreshStatus = { [weak self] in self?.refreshStatus() }
         iphone.refreshStatus = { [weak self] in self?.refreshStatus() }
+        sitting.openDashboard = { [weak self] place in self?.openDashboard(at: place) }
 
         scheduler.onCollect = { [weak self] in self?.collect() }
         scheduler.onUpdateCheck = { [weak self] in self?.updates.check(userInitiated: false) }
@@ -139,6 +141,7 @@ final class AppController: NSObject, NSApplicationDelegate, AppActions {
         model.nextCollect = scheduler.nextCollect
         updates.offerPendingIfIdle()
         iphone.checkSignature()
+        sitting.tick()
     }
 
     func refreshFullDiskAccess() {
@@ -201,8 +204,11 @@ final class AppController: NSObject, NSApplicationDelegate, AppActions {
 
     // MARK: AppActions
 
-    func openDashboard() {
-        if let url = URL(string: "http://localhost:\(supervisor.port)") { NSWorkspace.shared.open(url) }
+    func openDashboard() { openDashboard(at: "") }
+
+    /// The dashboard, at a place on a page (`#exercise/sitting`) or at its first page.
+    func openDashboard(at place: String) {
+        if let url = URL(string: "http://localhost:\(supervisor.port)/\(place)") { NSWorkspace.shared.open(url) }
         status?.close()
     }
 
@@ -286,6 +292,7 @@ final class AppController: NSObject, NSApplicationDelegate, AppActions {
         settings.port = port
         settings.collectEveryHours = draft.collectHours
         settings.autoUpdateCheck = draft.autoUpdate
+        settings.sittingReminders = draft.sitting
         if draft.openAtLogin != LoginItem.isEnabled {
             do {
                 try LoginItem.setEnabled(draft.openAtLogin)

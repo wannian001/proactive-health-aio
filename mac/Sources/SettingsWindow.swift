@@ -11,6 +11,7 @@ final class SettingsDraft: ObservableObject {
     @Published var collectHours: Int
     @Published var openAtLogin: Bool
     @Published var autoUpdate: Bool
+    @Published var sitting: Bool
     @Published var error: String?
     let repoPath: String?
     let defaultPython: String
@@ -23,6 +24,7 @@ final class SettingsDraft: ObservableObject {
         collectHours = settings.collectEveryHours
         self.openAtLogin = openAtLogin
         autoUpdate = settings.autoUpdateCheck
+        sitting = settings.sittingReminders
         self.repoPath = repoPath
         self.defaultPython = defaultPython
     }
@@ -95,6 +97,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Toggle(S.openAtLogin, isOn: $draft.openAtLogin)
                         Toggle(S.autoUpdate, isOn: $draft.autoUpdate)
+                        Toggle(S.sittingToggle, isOn: $draft.sitting)
                     }
                 }
             }

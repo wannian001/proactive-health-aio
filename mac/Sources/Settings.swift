@@ -14,6 +14,7 @@ final class AppSettings: @unchecked Sendable {
         static let port = "port"
         static let collectHours = "collectEveryHours"
         static let autoUpdate = "autoUpdateCheck"
+        static let sitting = "sittingReminders"
         static let skipped = "skippedVersion"
         static let signatureAlertDay = "signatureAlertDay"
     }
@@ -51,6 +52,12 @@ final class AppSettings: @unchecked Sendable {
             return value == 0 ? Self.defaultCollectHours : min(24, max(1, value))
         }
         set { store(newValue == Self.defaultCollectHours ? nil : newValue, Key.collectHours) }
+    }
+
+    /// A notification after 50 minutes at the computer (SittingWatch); on unless switched off.
+    var sittingReminders: Bool {
+        get { defaults.object(forKey: Key.sitting) == nil ? true : defaults.bool(forKey: Key.sitting) }
+        set { defaults.set(newValue, forKey: Key.sitting) }
     }
 
     var autoUpdateCheck: Bool {

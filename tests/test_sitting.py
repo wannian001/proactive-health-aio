@@ -63,6 +63,17 @@ class Live(Base):
         sitting.note(self.cfg, None)
         self.assertIsNone(sitting.live(self.ctx()))
 
+    def test_times_with_a_zone_as_the_mac_app_sends_them(self):
+        from zoneinfo import ZoneInfo
+        mel = ZoneInfo("Australia/Melbourne")
+        start = (NOW - timedelta(minutes=70)).replace(tzinfo=mel)
+        sitting.note(self.cfg, start, NOW.replace(tzinfo=mel) - timedelta(minutes=1))
+        self.assertEqual(sitting.live(self.ctx())["minutes"], 70)
+        sitting.note(self.cfg, None, NOW.replace(tzinfo=mel), off_since=NOW.replace(tzinfo=mel))
+        back = (NOW + timedelta(minutes=6)).replace(tzinfo=mel)
+        sitting.note(self.cfg, back, back)
+        self.assertEqual([s["after"] for s in restore_log.replay(restore_log.read(self.cfg))["sessions"]], [70])
+
     def test_the_reminder_comes_at_fifty_minutes_and_again_every_thirty(self):
         sitting.note(self.cfg, NOW - timedelta(minutes=49), NOW)
         self.assertIsNone(sitting.nudge(self.ctx())["kind"])

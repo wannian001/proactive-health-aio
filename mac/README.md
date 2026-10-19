@@ -28,6 +28,11 @@ the iPhone app signed, and tells you when a new version is out.<br>
 - **The iPhone app runs out after 7 days** when it is built with a free Apple ID. The app reminds you two days before
   and renews it with one click (Xcode builds and installs it again).
 - **Updates come from GitHub.** When there is a newer version, the app asks; if you say yes, it updates.
+- **Sitting is only seen as it happens from here.** Screen Time reaches the dashboard every few hours, so the app
+  watches how long the keyboard and mouse have been idle (5 minutes is a break). After 50 minutes at the computer
+  it shows a notification with one short move (and again every 30 minutes); a click opens the sitting card. Getting
+  up after a long stretch is written down as a rest by itself. **Remind me after 50 minutes at the computer** in
+  Settings turns the notifications off. It reads only the idle time, never what you type.
 
 ### Build
 
@@ -136,6 +141,9 @@ When a command prints no JSON, the app shows the last lines of its stderr instea
 - **Biome 只保留大约四周。** 应用每隔几个小时导入一次，一天都不会丢。
 - **用免费 Apple ID 构建的 iPhone 应用 7 天后就打不开了。** 应用提前两天提醒你，点一下就续签（用 Xcode 重新构建并安装）。
 - **更新来自 GitHub。** 有新版本时应用会问你；你同意，它就更新。
+- **“此刻坐了多久”只能在这里看到。** 屏幕使用时间要过几个小时才进面板，所以应用看键盘和鼠标闲了多久（闲 5 分钟算起身）。在电脑前
+  连续 50 分钟，弹一个系统通知，附一个小动作（还在继续就每 30 分钟再提醒）；点通知打开久坐卡片。坐了很久之后起身，会自动记成一次休息。
+  设置里的 **在电脑前连续坐满 50 分钟时提醒我** 可以关掉通知。它只读闲置时长，从不读你打了什么字。
 
 ### 构建
 

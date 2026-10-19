@@ -182,6 +182,17 @@ enum S {
     static func hours(_ n: Int) -> String { tr(n == 1 ? "1 hour" : "\(n) hours", "\(n) 小时") }
     static var openAtLogin: String { tr("Open at login", "登录时打开") }
     static var autoUpdate: String { tr("Check for updates automatically", "自动检查更新") }
+    static var sittingToggle: String { tr("Remind me after 50 minutes at the computer", "在电脑前连续坐满 50 分钟时提醒我") }
+    static func sittingTitle(_ minutes: Int) -> String {
+        let h = minutes / 60, m = minutes % 60
+        let d = h > 0 ? tr("\(h) h \(m) min", "\(h) 小时 \(m) 分") : tr("\(m) min", "\(m) 分钟")
+        return tr("At the computer for \(d)", "已经连续坐了 \(d)")
+    }
+    static func sittingBody(_ move: String, _ dose: String, _ walk: String?) -> String {
+        let first = dose.isEmpty ? move : tr("\(move) (\(dose))", "\(move)（\(dose)）")
+        guard let walk else { return tr("Get up for two minutes: \(first)", "起来动两分钟：\(first)") }
+        return tr("Get up for two minutes: \(first), or \(walk.lowercased())", "起来动两分钟：\(first)，或者\(walk)")
+    }
     static var repository: String { tr("Repository", "仓库") }
     static var notFound: String { tr("not found", "未找到") }
     static var badPort: String { tr("The port must be a number from 1024 to 65535.", "端口必须是 1024 到 65535 之间的数字。") }

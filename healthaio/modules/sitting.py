@@ -84,8 +84,8 @@ def live(ctx: Context) -> Optional[Dict[str, Any]]:
     except (TypeError, ValueError):
         return None
     now = ctx.now
-    if seen.tzinfo is not None:  # compare in local wall time, like the rest of the app
-        since, seen = since.astimezone(ctx.cfg.tz).replace(tzinfo=None), seen.astimezone(ctx.cfg.tz).replace(tzinfo=None)
+    local = lambda t: t.astimezone(ctx.cfg.tz).replace(tzinfo=None) if t.tzinfo else t  # local wall time, like the rest of the app
+    since, seen = local(since), local(seen)
     if not timedelta(0) <= now - seen <= timedelta(minutes=FRESH_MIN) or since > now:
         return None
     return {"since": iso(since), "seen": iso(seen), "minutes": round((now - since).total_seconds() / 60)}

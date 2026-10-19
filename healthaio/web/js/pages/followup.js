@@ -7,6 +7,7 @@ import { clock, day, dur, num, shortDay, t } from "../i18n.js";
 import { COLOR, icon, STATE_ICON } from "../icons.js";
 import { effectsHtml, mountEffects } from "./effects.js";
 import { TODO_ICON, todoTitle } from "./today.js";
+import { activeHtml, historyHtml, mountRestore } from "../restore-ui.js";
 
 const hours = (h) => num(h, Number.isInteger(h) ? 0 : 1);
 
@@ -106,6 +107,7 @@ export default {
   render(p) {
     return `<div class="head"><div><h1>${t("nav.followup")}</h1><div class="sub">${t("fu.sub")}</div></div></div>
       <div class="grid">
+        ${p.restore ? `<section class="card span-12">${activeHtml(p.restore)}${historyHtml(p.restore, { limit: 30 })}<p class="small"><a href="#restore">${t("nav.restore")} →</a></p></section>` : ""}
         ${yesterdayHtml(p)}
         ${waysHtml(p)}
         ${daysHtml(p)}
@@ -114,6 +116,7 @@ export default {
       </div>`;
   },
   mount(root, p) {
+    mountRestore(root);
     mountEffects(root, p.effects);
     root.querySelectorAll(".fu-row .goal-dots").forEach((el) => { const r = p.rows[el.dataset.i]; draw(el, (w) => adviceDots(fortnight(p, r), { width: w })); });
   },

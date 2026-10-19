@@ -5,6 +5,7 @@
 // it trained and how sore that was), and how your body has answered training. What training asked of you is on
 // Body & mind load. The rules are in modules/recovery.py.
 import { isStatic, post } from "../api.js";
+import { checkinHtml, mountRestore } from "../restore-ui.js";
 import { bullet, draw, esc, scoreDots } from "../charts.js";
 import { figureSvg, mountFigure } from "../figure.js";
 import { day, dur, measure, num, shortDay, t, toDate, wtype } from "../i18n.js";
@@ -176,6 +177,7 @@ export default {
     return `<div class="head"><div><h1>${rv("title")}</h1><div class="sub">${rv("sub")}</div></div></div>
       ${overviewHtml(p)}
       <div class="grid">
+        ${p.restore ? `<section class="card span-12"><h2>${t("rr.mind")}</h2>${checkinHtml(p.restore, true)}<p class="small"><a href="#restore">${t("rr.choose")} →</a></p></section>` : ""}
         <details class="card span-12 rec-checkin"><summary>${rv("editor")}</summary>${sorenessHtml(p)}</details>
         ${afterHtml(p)}
         ${responseHtml(p)}
@@ -186,6 +188,7 @@ export default {
       </div>`;
   },
   mount(root, p) {
+    mountRestore(root);
     root.querySelectorAll(".bul").forEach((el) => {
       const m = p.recovery.metrics.find((x) => x.key === el.dataset.key);
       draw(el, (w) => bullet(m.value, m.band, { width: w, unit: m.unit, tone: m.tone }));

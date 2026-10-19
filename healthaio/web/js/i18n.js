@@ -1356,6 +1356,10 @@ Object.assign(DICT.zh, {
   "rec.rule_after": "最近 {n} 天里每个训练日的第二天早上：你的感觉（你答的 2、5 或 8）、HRV（练后那个早上和练前那个早上比）、静息心率（和你的平常比）、练后那一晚（睡了多久和平常比，在床上有多少时间是睡着的）。身体的每一项：在 5 分的基础上，每偏离你平常一个宽度加或减 2.5 分，往好的方向加，限制在 0 到 10（HRV 用的是它早上和早上之间变化的平常宽度）。几项取平均；至少两项、其中一项来自身体，才算分。{good} 分以上算恢复得好，{low} 分以下算没恢复好。这是应用里唯一的总分，每一项都摊开写在旁边。",
 });
 
+import { restoreText } from "./restore-text.js";
+Object.assign(DICT.en, restoreText.en);
+Object.assign(DICT.zh, restoreText.zh);
+
 const WEEKDAY = { en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], zh: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] };
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

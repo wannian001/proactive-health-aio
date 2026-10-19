@@ -171,6 +171,7 @@ def ways(key: str, given: List[Dict[str, Any]], tonight: Optional[Dict[str, Any]
 
 
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
+    from . import restore
     end = min(date.fromisoformat(day) if day else ctx.today, ctx.today)
     window = [end - timedelta(days=k) for k in range(DAYS, 0, -1)]  # oldest first; yesterday last
     meals = food_page.food_days(ctx, end)
@@ -195,6 +196,7 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     yesterday = days[-1]
     shown = [x for x in yesterday["items"] if x["checked"]]
     return {"page": "followup", "day": iso(end), "today": iso(ctx.today), "now": iso(ctx.now),
+            "restore": restore.build(ctx) if end == ctx.today else None,
             "yesterday": yesterday,
             "yesterday_kept": sum(1 for x in shown if x["met"]), "yesterday_known": sum(1 for x in shown if x["met"] is not None),
             "dates": [iso(d) for d in window], "rows": rows, "stuck": [r["key"] for r in rows if r["stuck"]],

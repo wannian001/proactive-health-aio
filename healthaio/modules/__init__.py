@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 from ..context import Context
-from . import body, data, docs, drain, exercise, followup, food, goals, load, recovery, sleep, time, today, week
+from . import body, data, docs, drain, exercise, followup, food, goals, load, recovery, restore, sleep, time, today, week
 
 PAGES: Dict[str, Callable[..., Dict[str, Any]]] = {
     "today": lambda ctx, param=None: today.build(ctx, day=param),
@@ -11,6 +11,7 @@ PAGES: Dict[str, Callable[..., Dict[str, Any]]] = {
     "body": lambda ctx, param=None: body.build(ctx, day=param),
     "sleep": lambda ctx, param=None: sleep.build(ctx, day=param),
     "recovery": lambda ctx, param=None: recovery.build(ctx, day=param),
+    "restore": lambda ctx, param=None: restore.build(ctx),
     # not a page: what every page asks after a strength or hard workout (the popup; modules/recovery.py)
     "prompt": lambda ctx, param=None: recovery.prompt(ctx),
     "load": lambda ctx, param=None: load.build(ctx, day=param),

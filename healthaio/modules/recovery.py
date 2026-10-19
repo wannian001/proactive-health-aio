@@ -317,13 +317,14 @@ def after_training(ctx: Context, end: date, days: Dict[date, Dict[str, Any]],
 
 
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
-    from . import body
+    from . import body, restore
     end = min(date.fromisoformat(day) if day else ctx.today, ctx.today)
     days = daily_load(ctx, end)
     annotate(days, workout_notes(ctx))
     trained = trained_on(days)
     log = soreness_log(ctx)
     return {"page": "recovery", "day": iso(end), "today": iso(ctx.today), "now": iso(ctx.now), "figure": ctx.cfg.figure,
+            "restore": restore.build(ctx) if end == ctx.today else None,
             "recovery": today_page.recovery(ctx, end),
             "self": today_page.self_report(ctx, end),
             "cardio": body.cardio(ctx, end),

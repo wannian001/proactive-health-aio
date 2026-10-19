@@ -31,3 +31,5 @@ dist/
 
 # what the app keeps next to healthaio.toml: paired devices, packages from the phone, logs
 .healthaio/
+# private rest, feelings and celebration history, beside healthaio.toml
+restore.jsonl

@@ -13,6 +13,8 @@ import exercise from "./pages/exercise.js";
 import followup from "./pages/followup.js";
 import load from "./pages/load.js";
 import recovery from "./pages/recovery.js";
+import restore from "./pages/restore.js";
+import { quietSuggestion } from "./restore-ui.js";
 import food from "./pages/food.js";
 import goals from "./pages/goals.js";
 import guide from "./pages/guide.js";
@@ -24,7 +26,7 @@ import today from "./pages/today.js";
 import week from "./pages/week.js";
 
 // the design kit gallery (#kit) is a page but not a menu item: the footer of every page and the Data page link to it
-const PAGES = { today, week, body, recovery, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };
+const PAGES = { today, week, body, recovery, restore, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };
 // the menu is one axis, the loop of managing your health, one question per item: how am I today and what do I
 // change (Today); what is my body showing, the outcomes (Body signals: recovery, sleep, drain, weight); what do I do every day,
 // the causes I control (Daily life: exercise, food, stimulation); and what have I planned and did it happen (Plans &
@@ -36,7 +38,7 @@ const NAV = ["today", "body", "life", "plans"];
 // a menu item that holds several pages shows a small switch above the page title and opens on its first page
 const GROUPS = {
   body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["drain", "nav.drain"], ["body", "nav.weight_tab"]],
-  life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"]],
+  life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"], ["restore", "nav.restore"]],
   plans: [["week", "nav.schedule_week"], ["load", "nav.load_tab"], ["goals", "nav.goals"], ["followup", "nav.followup"]],
 };
 const groupOf = (page) => Object.keys(GROUPS).find((g) => GROUPS[g].some(([p]) => p === page)) || page;
@@ -156,7 +158,7 @@ function header(active) {
   };
 }
 
-async function route() {
+async function route(event) {
   const [raw, param] = (location.hash.replace(/^#/, "") || "today").split("/");
   if (OUTSIDE[raw]) { location.replace(t(OUTSIDE[raw])); return; }  // an old #history link: the page moved to the author's site
   const name = ALIAS[raw] || raw;
@@ -172,7 +174,22 @@ async function route() {
     main.innerHTML = updateNote() + sub + PAGES[page].render(data) + footer();
     mountUpdate(main);
     PAGES[page].mount?.(main, data);
-    get("prompt").then((info) => mountPrompt(info, page), () => mountPrompt(null));  // after a strength or hard workout: what did it train?
+    if (event?.type === "healthaio:restore-saved") {
+      const { op, ref } = event.detail;
+      const selector = op === "start" ? ".rr-current h3" : op === "checkin" ? ".rr-self" :
+        ["finish", "cancel", "feedback"].includes(op) ? `[data-rr-session="${ref}"] h3` :
+        op.startsWith("reward_") ? ".rr-rewards-layout h2" : "#rr-next-title";
+      const target = main.querySelector(selector) || main.querySelector("h1");
+      if (target) { target.setAttribute("tabindex", "-1"); target.focus(); }
+    }
+    // Recovery choices, an activity in progress and an explicit quiet interval also
+    // silence the existing workout-note popup across the app's other pages.
+    if (page === "restore" || DOCS.includes(page) || page === "kit") mountPrompt(null);
+    else Promise.resolve(data.restore || get("restore")).then((rest) => {
+      if (shown !== page) return;
+      if (quietSuggestion(rest)) mountPrompt(null);
+      else get("prompt").then((info) => { if (shown === page) mountPrompt(info, page); }, () => mountPrompt(null));
+    }, () => mountPrompt(null));
   } catch (error) {
     const staticGap = isStatic && /^404/.test(error.message);  // the demo site only has a few pre-rendered dates
     main.innerHTML = `<div class="card"><p class="lede">${t(staticGap ? "ui.static_gap" : "ui.error")}</p><p class="muted small">${t(staticGap ? "ui.static_gap_hint" : "ui.error_hint")}</p>
@@ -190,6 +207,7 @@ async function start() {
   applyLook();
   installTooltip();
   window.addEventListener("hashchange", route);
+  window.addEventListener("healthaio:restore-saved", route);
   route();
 }
 

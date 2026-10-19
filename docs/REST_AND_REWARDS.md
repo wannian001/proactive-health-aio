@@ -1,0 +1,56 @@
+# Rest & rewards · 休息与奖励
+
+这部分接在 AIO 原有的「记录 → 对比 → 调整 → 跟进」之中，服务于持续的投入、恢复和享受。保留四组主导航。
+
+| 现有位置 | 新增行为 |
+|---|---|
+| 今天 | 一条当前建议；依据默认折叠；可选的当前感受；两小时少打扰。原有日环、日程和调整保留在「今天的整体安排」。 |
+| 身体状态 → 恢复 | 当前身体感受、精神状态、任务难度。与早晨打卡、手表测量分开。 |
+| 生活习惯 → 休息与奖励 | 活动卡片、开始 / 结束 / 取消、独立的庆祝计划。 |
+| 计划与跟进 → 跟进 | 实际活动记录、可修改的主观反馈、开始活动时的依据快照。 |
+
+## 行为规则
+
+- HRV、静息心率和睡眠沿用已有的个人 28 天基线比较。至少两项不如平常，且数据日期为今天，才触发身体恢复建议。最近三天中有至少两天如此，展示趋势背景；不是临床阈值。
+- 自评疲劳、酸痛、精神疲劳或紧绷可独立触发轻松活动建议。自评只作为自评，不反推身体测量值。
+- 当前感受参考四小时；少打扰持续两小时。这是首版产品参数，尚未经过个人效果验证。到期由下一次读取页面时重新判断。
+- 最近活动反馈「更累了」时，倾向更轻松的休息，不催促工作。只有同时报告「身体还舒服」和「无聊」，才邀请用户自己选一点挑战。
+- 日程显示未来三天计划中的工作 / 上课时长与未完成截止项；重叠时段只计一次。不换算成精神压力分数。无来源保留未知。
+- 今日饮食仅显示到当前时刻已录入的碳水和记录条数，不当作完整摄入，不估算多巴胺，不用后来的食物解释更早的 HRV。
+- 休息不需要完成任务才能获得。庆祝是独立计划，可以没有里程碑；保存计划不等于已经做过。
+- 活动没有强制计时。用户开始、结束、取消分别记录；「变好 / 差不多 / 更累」和「开心 / 一般 / 不喜欢」分开，均可不答。
+- 普通调整建议在少打扰或自评投入时收起，已有的训练记录弹窗也暂缓。休息页不弹训练记录提示；运动记录入口仍保留。
+
+## 本地记录与接口
+
+`restore.jsonl` 与 `healthaio.toml` 同目录，已加入忽略规则，不放进 CSV 健康测量表。新文件权限为 `0600`。已有数据不迁移。
+
+- `GET /api/restore` 与 `healthaio page restore`：同一份当前状态、活动和庆祝记录。
+- `POST /api/restore`：沿用当前应用的同源和配对设备限制；请求体上限 4 KB。
+- 事件类型：`checkin`, `quiet`, `resume`, `start`, `finish`, `cancel`, `feedback`, `reward_plan`, `reward_done`, `reward_cancel`。
+- 每次请求必须有独立 `request_id`。相同 ID 和相同请求重试只返回原回执；换内容复用 ID 会被拒绝。
+- 服务端生成带时区的时间和事件 ID，在已有 writer lock 下追加并 `fsync`。同时只能有一个进行中的活动；结束后才可补充反馈。反馈修改追加新事件，不抹去旧事件。
+- 开始事件保存所用规则版本、测量日期与比较值、当前自评和日程 / 饮食背景。之后重算的建议不会覆盖当时的依据。
+- 遇到损坏日志，停止该日志的读取 / 写入并报错，不静默把损坏记录当成未发生。保留原文件后再修复。
+- 记录列出最近 30 项活动；进行中的活动始终单独显示。所有待进行的庆祝保留显示，已结束庆祝显示最近 30 项。
+
+静态站保留浏览功能，但所有保存按钮禁用；API 客户端也拒绝静态模式写入。本地 `--demo` 使用独立临时目录，所有页面明确标记演示数据。测试与演示中的自评不代表使用者的真实状态。
+
+## 当前边界与下一步
+
+这版包含本地可持久化的完整交互，不包含后台 HealthKit 采样、系统通知推送、抑郁风险预测或自动修改日历。尚未验证真实 iPhone / Mac 安装包，也未发布远端。
+
+后续若接入更主动的提醒，先保留 HRV 采样时间、来源和样本数，明确提醒频率与静默策略，再做设备端推送。活动推荐可在积累个人反馈后按偏好排序；当前六项是可选活动库，并没有宣称哪项对某个人更有效。
+
+## 研究依据与解释边界
+
+- [Quigley et al., 2024, HR/HRV measurement and interpretation guidance](https://onlinelibrary.wiley.com/doi/full/10.1111/psyp.14604)：测量方法与生理背景限制了可以作出的推断。
+- [Verkuil et al., 2016, daily-life HRV and psychological stress](https://pubmed.ncbi.nlm.nih.gov/27150960/)：研究考虑活动等代谢因素，不能把日平均 HRV 直接当作个人精神压力诊断。
+
+文献用于限制解释范围。当前提醒规则、四小时参考期和活动菜单都是产品设计选择，不是经过临床验证的医学算法。
+
+## Local verification
+
+Run the ledger / policy / HTTP boundary tests with `python3 -m unittest discover -s tests -p 'test_restore.py'`.
+Existing page, recovery, follow-up, load and documentation tests exercise their shared payloads and static export.
+Browser checks should use `serve --demo`, never real health records: check-in → start → refresh → finish → optional feedback → follow-up; celebration planning; quiet/resume; keyboard focus; Chinese/English; 390 px and desktop; both themes.

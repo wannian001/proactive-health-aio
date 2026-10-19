@@ -6,6 +6,7 @@ import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js";
 import { COLOR, icon, STATE_ICON } from "../icons.js";
 import { worseLine } from "./drain.js";
 import { helping } from "./effects.js";
+import { checkinHtml, modeNote, mountRestore, nextStep, quietSuggestion } from "../restore-ui.js";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const chip = (cls, text, glyph = "") => `<span class="chip ${cls}">${glyph}${esc(text)}</span>`;
@@ -86,7 +87,7 @@ function todoWhy(x) {
 
 function todoHtml(p) {
   const a = p.actions;
-  if (!a) return "";
+  if (!a || (!a.steady && !a.items.length)) return "";
   const body = a.steady ? `<p class="lede" style="font-size:var(--t-lg);margin:0">${t("todo.steady")}</p>`
     : `<ol class="todo">${a.items.map((x) => `<li><a class="todo-item" href="${x.link}">
         <span class="todo-icon" style="color:${COLOR[TODO_ICON[x.domain]] || "var(--ink-2)"}">${icon(TODO_ICON[x.domain], 20)}</span>
@@ -215,11 +216,18 @@ export default {
     const prev = shiftDay(p.day, -1), next = shiftDay(p.day, 1);
     const stepper = `<div class="stepper"><a href="#today/${prev}">‹ ${t("ui.prev_day")}</a>
       ${p.looking_back ? `<a href="${next === p.today ? "#today" : `#today/${next}`}">${t("ui.next_day")} ›</a><a href="#today">${t("ui.back_today")}</a>` : `<span aria-disabled="true">${t("ui.next_day")} ›</span>`}</div>`;
+    const restore = p.restore;
+    // Keep the day ring and original details, with one immediate next step in front.
+    const gentle = restore && ["reported", "gentler", "signals", "trend"].includes(restore.situation.key);
+    const actions = gentle && p.actions ? { ...p.actions, items: p.actions.items.filter((x) => !["move", "strength"].includes(x.key)) } : p.actions;
+    const daily = { ...p, actions: quietSuggestion(restore) ? null : actions };
+    const overview = restore ? `<details class="card span-12 rr-day-overview"><summary>${t("rr.overview")}</summary><div>${morningHtml(daily)}</div></details>` : morningHtml(p);
     return `<div class="head"><div><h1>${p.looking_back ? t("today.looking_back", { day: day(p.day) }) : t("today.title")}</h1>
       <div class="sub">${day(p.day)}</div></div>${stepper}</div>
-      <div class="grid">${morningHtml(p)}${linesHtml(p)}</div>`;
+      <div class="grid">${restore ? `<section class="card span-12 rr-today">${nextStep(restore)}${restore.active ? "" : checkinHtml(restore)}${modeNote(restore)}</section>` : ""}${overview}${linesHtml(p)}</div>`;
   },
   mount(root, p) {
+    mountRestore(root);
     const ringBox = root.querySelector("#ring");
     const now = p.ring.now ? clock(p.ring.now) : clock(p.ring.sleep?.end);
     draw(ringBox, (w) => dayRing(p.ring, { size: Math.max(260, Math.min(360, w)), center: now, centerSub: p.ring.now ? t("ring.now") : day(p.day) }));

@@ -246,10 +246,11 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     att = attention(ctx, picked)
     rec = recovery(ctx, picked)
     drain_card = drain_summary(ctx, picked)
-    from . import actions  # imported here: actions reads the Exercise and Food pages, which read this one
+    from . import actions, restore  # imported here: these modules also read this one
     return {
         "page": "today", "day": iso(picked), "today": iso(ctx.today), "now": iso(ctx.now),
         "looking_back": picked != ctx.today,
+        "restore": restore.build(ctx) if picked == ctx.today else None,
         "agenda": agenda(ctx, picked),
         "recovery": rec,
         # what to adjust today, read off the other pages; only for today itself (a past day's advice is no use)

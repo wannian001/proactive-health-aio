@@ -283,7 +283,7 @@ class Menu(unittest.TestCase):
         # Schedule and Actions & goals are one item (a plan, and whether it held)
         self.assertIn('review: "followup"', app)  # an old #review link opens Follow-up, where "tomorrow will be better" is
         self.assertIn('body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["drain", "nav.drain"], ["body", "nav.weight_tab"]]', app)
-        self.assertIn('life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"]]', app)
+        self.assertIn('life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"], ["restore", "nav.restore"]]', app)
         self.assertIn('plans: [["week", "nav.schedule_week"], ["load", "nav.load_tab"], ["goals", "nav.goals"], ["followup", "nav.followup"]]', app)
         i18n = (Path(__file__).resolve().parents[1] / "healthaio" / "web" / "js" / "i18n.js").read_text(encoding="utf-8")
         for key in ("nav.body", "nav.life", "nav.plans", "nav.short.plans", "nav.followup"):

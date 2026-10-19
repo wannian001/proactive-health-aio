@@ -40,3 +40,30 @@ export function mountCare(root) {
     };
   });
 }
+
+// ---- where it feels tight: tomorrow's question ("how is it now?"), on Today and on Recovery -------------------------
+export function askHtml(ask) {
+  if (!ask?.length) return "";
+  return `<div class="care-ask">${ask.map((a) => `<div class="care-ask-row" data-ask="${esc(a.ref)}" data-region="${esc(a.region)}">
+    <span class="small">${esc(t("care.ask", { region: t(`care.region.${a.region}`), feel: t(`care.feel.${a.feel}`) }))}</span>
+    <span class="now-btns">${["better", "same", "worse"].map((c) => `<button type="button" class="goal-btn" data-change="${c}"${isStatic ? " disabled" : ""}>${t(`care.change.${c}`)}</button>`).join("")}</span></div>`).join("")}</div>`;
+}
+
+export function mountAsk(root) {
+  root.querySelectorAll(".care-ask-row").forEach((row) => {
+    row.querySelectorAll("[data-change]").forEach((b) => {
+      b.onclick = async () => {
+        if (isStatic) return;
+        row.dataset.request = row.dataset.request || crypto.randomUUID();
+        row.querySelectorAll("button").forEach((x) => { x.disabled = true; });
+        try {
+          await post("care", { op: "answer", ref: row.dataset.ask, region: row.dataset.region, change: b.dataset.change, request_id: row.dataset.request });
+          row.querySelector(".now-btns").innerHTML = `<span class="chip">${t("care.answered")} · ${t(`care.change.${b.dataset.change}`)}</span>`;
+        } catch (error) {
+          row.querySelectorAll("button").forEach((x) => { x.disabled = false; });
+          b.title = t("care.err", { e: error.message });
+        }
+      };
+    });
+  });
+}

@@ -24,7 +24,7 @@ in one place, each compared with your own normal, and every morning, what to adj
 | **What people use now** | Wearable apps (Oura, WHOOP, Garmin Connect) turn their own device's data into a recovery score. Food loggers (MyFitnessPal, Cronometer) cover food. Screen Time covers screens. Apple Health stores almost everything but explains little. Cross-app trackers (Exist.io, Bearable) look for correlations between apps. |
 | **What that costs you** | Several apps and often several subscriptions; your history in several clouds; scores whose formula you cannot check; and you still do the joining-up yourself. |
 | **What this does instead** | Two small companion apps (Mac and iPhone) collect what your devices already record; one local app compares every signal with *your own* last 28 days (not a population), keeps every goal in one file, each morning names at most three things to adjust (at most one each for training, sleep, food and daytime screens) with the numbers behind each, and the next day checks against the data whether they happened, offering another way for the ones that keep not happening. Every rule is written down; nothing leaves the computer. |
-| **Trade-offs, on purpose** | No cloud and no background sync: the iPhone app sends Apple Health to your own computer, over your home network or Tailscale, while it is open; without it you import an Apple Health export. Food needs a logging app that writes to Apple Health, or a CSV. The advice is a short list of fixed, explainable rules, not a model; it is about habits, not medical advice. A missing number stays missing, so a sparse log gives fewer answers, not made-up ones. |
+| **Trade-offs, on purpose** | No cloud and no background sync: the iPhone app sends Apple Health to your own computer, over your home network or Tailscale, while it is open; without it you import an Apple Health export. Food needs a logging app that writes to Apple Health, or a CSV. The advice is a short list of fixed, explainable rules, not a model (an optional assistant only reads the sentence you type about where it feels tight; the moves it leads to are a fixed, reviewed list); it is about habits, not medical advice. A missing number stays missing, so a sparse log gives fewer answers, not made-up ones. |
 
 ### Rest and rewards
 
@@ -174,7 +174,7 @@ python3 -m healthaio iphone renew       # re-sign and reinstall the iPhone app
 How the phone and the computer talk, and what each side checks: [docs/CAPTURE.md](docs/CAPTURE.md).
 
 **What it costs, measured on an M4 MacBook.** There is no server to carry: each person's computer is their own server,
-and the only request to the internet is the daily version check. One send from the phone is about 1,600 records and
+and the only request to the internet is the daily version check (plus, if you switch it on, the assistant reading one sentence). One send from the phone is about 1,600 records and
 350 KB for 3 days (counted from a real day of about 540 records) and takes 0.03 s to write into the tables; one Screen
 Time collection (four weeks, 3 devices, about 6,900 stretches) takes 0.4 s; the dashboard holds about 105 MB of memory,
 no CPU when idle, and computes a page in 0.004–0.36 s; the data grows by about 5 MB a year, mostly screen records.
@@ -199,6 +199,11 @@ on a real phone with real data; nobody but the author has installed it yet.
   celebration events in the separate private `restore.jsonl` log.
 - The one request to the internet is the daily update check: a call to the GitHub API that sends nothing but the
   version number. `[updates] check = false` in healthaio.toml turns it off.
+- The assistant is off unless you switch it on (`[assistant] enabled = true`, and `pip install anthropic`). Then the
+  sentence you type on Recovery about where it feels tight, and the fixed lists of places and feelings, are sent to
+  Anthropic's API to be read; nothing else (no measurements, dates or name). The key is whatever the Anthropic SDK
+  finds itself (`ANTHROPIC_API_KEY` or an `ant auth login` profile); the app never reads or stores it. Without the
+  assistant, or if it fails, the same sentence is read with fixed word lists.
 - `build-static` (used for the demo site) refuses to run on your own data unless you pass a flag that says you mean to
   publish it.
 
@@ -264,7 +269,7 @@ repository contains none of that data.
 | **现在大家用什么** | 穿戴设备的 App（Oura、WHOOP、Garmin Connect）把自家设备的数据算成一个恢复分；记饮食的 App（MyFitnessPal、薄荷健康、Cronometer）只管吃；屏幕使用时间只管屏幕；Apple 健康几乎什么都存，但很少解释；跨 App 的追踪工具（Exist.io、Bearable）在不同 App 之间找相关。 |
 | **它们带来的负担** | 好几个 App、往往还有好几份订阅；你的历史散在好几家云上；分数怎么算的你查不到；最后把这些拼起来的还是你自己。 |
 | **这里的做法** | Mac 和 iPhone 上的两个小 App 把设备已经记下的收过来；一个本地的 App 把每个信号都和**你自己**最近 28 天比（不和人群比），所有目标写在一个文件里；每天早上最多点出三件该调整的事（训练、睡眠、饮食、白天的屏幕各最多一件），每件都写明依据的数字；第二天按数据核对做到没有，老做不到的换个做法。每条规则都写在明处，数据不出这台电脑。 |
-| **有意做的取舍** | 不走云、不在后台同步：iPhone App 打开时把 Apple 健康的数据发到你自己的电脑上（家里的网络或 Tailscale）；不装它，也可以导入一次 Apple 健康的导出包。饮食要靠一个会写进 Apple 健康的记录 App，或者一份 CSV。建议是一小组固定、讲得清的规则，不是模型；管的是生活习惯，不是医疗建议。缺的数就是缺，记得少，得到的回答就少，而不是编出来的回答。 |
+| **有意做的取舍** | 不走云、不在后台同步：iPhone App 打开时把 Apple 健康的数据发到你自己的电脑上（家里的网络或 Tailscale）；不装它，也可以导入一次 Apple 健康的导出包。饮食要靠一个会写进 Apple 健康的记录 App，或者一份 CSV。建议是一小组固定、讲得清的规则，不是模型（可选的助手只负责读懂你说的“哪里紧”那句话，后面给的动作是一份固定、审过的清单）；管的是生活习惯，不是医疗建议。缺的数就是缺，记得少，得到的回答就少，而不是编出来的回答。 |
 
 ### 它跑的闭环
 
@@ -382,7 +387,7 @@ python3 -m healthaio iphone renew       # 给 iPhone App 续签并重新装上
 
 手机和电脑之间怎么传、两边各检查什么：[docs/CAPTURE.md](docs/CAPTURE.md)。
 
-**开销（在一台 M4 MacBook 上实测）。** 没有服务器要扛：每个人的电脑就是自己的服务器，唯一联网的是每天一次检查新版本。手机发一次
+**开销（在一台 M4 MacBook 上实测）。** 没有服务器要扛：每个人的电脑就是自己的服务器，唯一联网的是每天一次检查新版本（你打开助手的话，再加上读那一句话）。手机发一次
 3 天约 1,600 条记录、约 350 KB（条数按真实的一天约 540 条算），电脑写进表里用 0.03 秒；采一次屏幕使用时间（4 周、3 台设备、约
 6,900 段）0.4 秒；看板常开约 105 MB 内存，空闲时 CPU 为 0，每页 0.004–0.36 秒算完；数据一年约 5 MB，大头是屏幕记录。装一次：
 下载约 6 秒，构建 Mac App 约 20 秒，装 iPhone App 要 Xcode（本体 3.7 GB）。现在到哪一步：在作者的 Mac 上用真实的屏幕使用时间
@@ -394,6 +399,7 @@ python3 -m healthaio iphone renew       # 给 iPhone App 续签并重新装上
 - 服务只监听 `127.0.0.1`。加 `--lan` 后也接受家里的网络和 Tailscale，但只认你配对过的设备：每台设备有自己的令牌，服务器只存令牌的哈希，`healthaio devices revoke` 随时断开一台。手机能发的只有 Apple 健康的样本包，原样存在 `.healthaio/` 里，再写进同样的 CSV。iPhone App 只发“Apple Watch”“iPhone”这样的型号，从不发你给设备起的名字。
 - 页面写入只接受这个应用自己页面发来的（这台电脑上的，或者配对过的手机里的面板）：你在目标页设的目标，一行记在 `healthaio.toml` 旁边的 `goals.jsonl` 里；你在恢复页保存的早上打卡，只改那天早上 `self_report.csv` 里的 `feel`，并替换那天早上在 `soreness.csv` 里的几行；同一张卡上打的精力分，带着时间追加到 `recovery_observations.jsonl`；练完记下的练了哪儿，只替换那次训练在 `workout_notes.csv` 里的一行；当前感受、休息活动、可选反馈与庆祝计划，追加到独立的私有 `restore.jsonl`。
 - 唯一联网的是每天一次的更新检查：问一次 GitHub API，除了版本号什么都不发。在 healthaio.toml 里写 `[updates] check = false` 就关掉。
+- 助手默认关着，要你自己打开（`[assistant] enabled = true`，再 `pip install anthropic`）。打开后，你在恢复页说的“哪里紧”那一句话，连同固定的部位和感觉清单，会发给 Anthropic 的 API 去读；别的都不发（没有测量数据、日期和名字）。API key 由 Anthropic SDK 自己找（`ANTHROPIC_API_KEY` 或 `ant auth login` 的登录信息），应用不读也不存。不开助手，或者助手出错时，同一句话按固定词表来读。
 - `build-static`（演示站用的）遇到你自己的数据会拒绝运行，除非你加一个明确表示“我要公开”的参数。
 
 ### 怎么搭的

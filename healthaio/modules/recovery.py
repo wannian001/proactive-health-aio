@@ -318,13 +318,17 @@ def after_training(ctx: Context, end: date, days: Dict[date, Dict[str, Any]],
 
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     from .. import hrv_model
-    from . import body, drain, restore, recovery_forecast, timed_recovery
+    from .. import assistant, care_log, routines
+    from . import body, care, drain, restore, recovery_forecast, timed_recovery
     end = min(date.fromisoformat(day) if day else ctx.today, ctx.today)
     days = daily_load(ctx, end)
     annotate(days, workout_notes(ctx))
     trained = trained_on(days)
     log = soreness_log(ctx)
     forecast = recovery_forecast.build(ctx, end, log)
+    care_payload = care.build(ctx, end)
+    shown = (care_payload["moves"] or {}).get("routines", [])
+    care_payload["info"], care_payload["stop"] = routines.info(shown), routines.STOP
     ratings = timed_recovery.build(ctx, end, forecast)
     return {"page": "recovery", "day": iso(end), "today": iso(ctx.today), "now": iso(ctx.now), "figure": ctx.cfg.figure,
             "restore": restore.build(ctx) if end == ctx.today else None,
@@ -333,6 +337,9 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
             "cardio": body.cardio(ctx, end),
             "hrv_prediction": hrv_model.build(ctx, end),
             "drain": drain.build(ctx, day),  # the long view at the end of the page (Wear and tear)
+            "care": care_payload,  # where it feels tight: the report, its moves, tomorrow's question (modules/care.py)
+            "care_choices": {"regions": list(routines.REGIONS), "feelings": list(routines.FEELINGS), "signs": list(care_log.SIGNS),
+                             "assistant": dict(zip(("on", "why"), assistant.available(ctx.cfg)))},
             "forecast": forecast, "current_ratings": ratings,
             "load": load_summary(days, end),
             "soreness": {**soreness(ctx, end, log, trained), "asked": asked(days, end)},

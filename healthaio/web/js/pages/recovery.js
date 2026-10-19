@@ -12,6 +12,7 @@ import { openTrained } from "../trained.js";
 import { overviewHtml, mountOverview } from "../recovery-overview.js";
 import { hrvModelHtml } from "../hrv-model.js";
 import { drainCards, mountDrain } from "./drain.js";
+import { askHtml, mountAsk, mountCare, routineHtml, stopLine } from "../care-ui.js";
 
 // a list of regions, both upper arms (or calves) said once
 const PAIRS = [["left_upper_arm", "right_upper_arm", "sore.pair.upper_arms"], ["left_calf", "right_calf", "sore.pair.calves"]];
@@ -109,6 +110,42 @@ function lastSaved(p) {
   return latest ? t("now.last", { time: clock(latest), what: parts.join(t("ui.list_sep")) }) : t("now.last_morning", { what: parts.join(t("ui.list_sep")) });
 }
 
+// where it feels tight after sitting (care_log): pick places and how they feel, or say it in a sentence and let the
+// reader (rules, or the assistant when it is on) pick them; then "anywhere else?", what it may be from, and the warning
+// signs once something is painful. Saved with the rest of the card.
+function tightHtml(p) {
+  const C = p.care_choices, R = p.care?.report;
+  const reader = C.assistant.on ? t("care.reader.assistant") : t("care.reader.rules");
+  return `<details class="care-tight"${R && sameDay(R.at, p.today) ? " open" : ""}><summary>${t("care.title")}<span class="xs muted"> · ${t("care.sub")}</span></summary>
+    <div class="care-say"><input type="text" id="care-said" maxlength="280" placeholder="${esc(t("care.say_placeholder"))}" aria-label="${esc(t("care.title"))}">
+      <button type="button" class="goal-btn" id="care-read"${isStatic ? " disabled" : ""}>${t("care.read")}</button></div>
+    <p class="xs muted care-reader" role="status">${esc(reader)}</p>
+    <div class="now-btns care-regions">${C.regions.map((r) => `<button type="button" class="goal-btn care-region" data-region="${r}" aria-pressed="false">${t(`care.region.${r}`)}</button>`).join("")}</div>
+    <div class="care-picked"></div>
+    <p class="small care-also" hidden></p>
+    <div class="now-row"><span class="small now-label">${t("care.cause")}</span><span class="now-btns">${["sitting", "training", "other"].map((c) => `<button type="button" class="goal-btn care-cause" data-cause="${c}" aria-pressed="false">${t(`care.cause.${c}`)}</button>`).join("")}</span></div>
+    <div class="now-row care-signs" hidden><span class="small now-label">${t("care.signs")}</span><span class="now-btns">${C.signs.map((x) => `<button type="button" class="goal-btn care-sign" data-sign="${x}" aria-pressed="false">${t(`care.sign.${x}`)}</button>`).join("")}</span></div>
+  </details>`;
+}
+
+// what was said (today or yesterday), what may be behind it, the moves, and the next day's question
+function careHtml(p) {
+  const C = p.care;
+  if (!C || (!C.report && !C.ask.length)) return "";
+  const R = C.report, M = C.moves;
+  const list = R ? Object.entries(R.tight).map(([r, f]) => `${t(`care.region.${r}`)}${t(`care.feel.${f}`)}`).join(t("ui.list_sep")) : "";
+  const S = C.maybe_sitting;
+  return `<section class="card span-12 care-card" id="care"><h2>${t("care.card_title")}<span class="aside">${t("care.card_sub")}</span></h2>
+    ${R ? `<p class="lede" style="font-size:var(--t-lg);margin:0 0 4px">${esc(t("care.reported", { when: `${sameDay(R.at, p.today) ? t("care.today") : t("care.yesterday")} ${clock(R.at)}`, list }))}</p>
+      <p class="small muted" style="margin:0">${[R.cause ? t("care.cause_said", { cause: t(`care.cause.${R.cause}`) }) : "", R.said ? `“${esc(R.said)}”` : ""].filter(Boolean).join(" · ")}</p>
+      ${S ? `<p class="small care-sitting">${icon("laptop", 14)} ${esc(t("care.maybe_sitting", { day: day(S.date, { weekday: false }), d: dur(S.longest) }))}</p>` : ""}` : ""}
+    ${M?.blocked ? `<p class="care-blocked">${esc(t("care.blocked", { signs: R.signs.map((x) => t(`care.sign.${x}`)).join(t("ui.list_sep")) }))}</p>${stopLine(C.stop)}` : ""}
+    ${M && !M.blocked ? `${M.stop_first ? stopLine(C.stop) : ""}<h3 class="section-title" style="margin-top:var(--s-3)">${t("care.moves")}</h3>
+      <div class="routines">${M.routines.map((id) => routineHtml(id, C.info, { why: "care" })).join("")}</div>${M.stop_first ? "" : stopLine(C.stop)}` : ""}
+    ${C.done_today.length ? `<p class="xs muted" style="margin:var(--s-2) 0 0">${esc(t("care.done_list", { n: C.done_today.length }))}</p>` : ""}
+    ${askHtml(C.ask)}</section>`;
+}
+
 function nowHtml(p) {
   const S = p.soreness, levels = S.today ? S.levels : {};
   const askedRegions = [...new Set(S.asked.flatMap((a) => a.regions))];
@@ -136,6 +173,7 @@ function nowHtml(p) {
       ${asked}
       <button type="button" class="goal-btn" id="sore-clear">${rv("confirmNoSoreness")}</button>
     </div></div>
+    ${tightHtml(p)}
     <div class="goal-act"><button type="button" class="goal-btn primary" id="now-save"${isStatic ? " disabled" : ""}>${t("now.save")}</button></div>
     <p class="xs now-msg" role="status">${isStatic ? t("now.static") : ""}</p>
     <details class="how now-history"><summary>${t("sore.last_days", { n: S.days })}</summary>
@@ -149,6 +187,7 @@ export default {
       ${overviewHtml(p)}
       <div class="grid">
         ${nowHtml(p)}
+        ${careHtml(p)}
         ${afterHtml(p)}
         <h2 class="span-12 doc-section rec-long" id="drain">${t("drain.title")}<span class="aside">${t("drain.sub", { from: day(p.drain.window.from, { weekday: false }), to: day(p.drain.window.to, { weekday: false }) })}</span></h2>
         ${drainCards(p.drain)}
@@ -206,6 +245,43 @@ export default {
     toggle(".feel-btn", "feel", (b) => Number(b.dataset.feel));
     toggle('.now-choice[data-field="mind"]', "mind", (b) => b.dataset.value);
     toggle('.now-choice[data-field="task"]', "task", (b) => b.dataset.value);
+    // where it feels tight: places, how each feels, what it may be from, warning signs, what was said and who read it
+    const tight = {}, signs = new Set();
+    let cause = null, said = "", parsedBy = null;
+    const picked = root.querySelector(".care-picked"), signsRow = root.querySelector(".care-signs"), also = root.querySelector(".care-also");
+    const paint = () => {
+      root.querySelectorAll(".care-region").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.region in tight)));
+      picked.innerHTML = Object.entries(tight).map(([r, f]) => `<div class="now-row"><span class="small now-label">${t(`care.region.${r}`)}</span>
+        <span class="now-btns">${p.care_choices.feelings.map((x) => `<button type="button" class="goal-btn care-feel" data-region="${r}" data-feel="${x}" aria-pressed="${x === f}">${t(`care.feel.${x}`)}</button>`).join("")}</span></div>`).join("");
+      picked.querySelectorAll(".care-feel").forEach((b) => { b.onclick = () => { tight[b.dataset.region] = b.dataset.feel; paint(); }; });
+      root.querySelectorAll(".care-cause").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cause === cause)));
+      root.querySelectorAll(".care-sign").forEach((b) => b.setAttribute("aria-pressed", String(signs.has(b.dataset.sign))));
+      signsRow.hidden = !(Object.values(tight).includes("pain") || signs.size);
+    };
+    root.querySelectorAll(".care-region").forEach((b) => { b.onclick = () => { if (b.dataset.region in tight) delete tight[b.dataset.region]; else tight[b.dataset.region] = "tight"; paint(); }; });
+    root.querySelectorAll(".care-cause").forEach((b) => { b.onclick = () => { cause = cause === b.dataset.cause ? null : b.dataset.cause; paint(); }; });
+    root.querySelectorAll(".care-sign").forEach((b) => { b.onclick = () => { if (signs.has(b.dataset.sign)) signs.delete(b.dataset.sign); else signs.add(b.dataset.sign); paint(); }; });
+    const readBtn = root.querySelector("#care-read"), reader = root.querySelector(".care-reader");
+    if (readBtn) readBtn.onclick = async () => {
+      said = root.querySelector("#care-said").value.trim();
+      if (!said || isStatic) return;
+      readBtn.disabled = true; reader.textContent = t("care.reading");
+      try {
+        const out = await post("care-parse", { said });
+        Object.assign(tight, out.tight); out.signs.forEach((x) => signs.add(x));
+        if (out.cause) cause = out.cause;
+        parsedBy = out.parsed_by;
+        reader.textContent = out.parsed_by === "assistant" ? t("care.read_by.assistant") : t(`care.read_by.rules${out.assistant ? `_${out.assistant}` : ""}`);
+        also.hidden = !out.also_ask.length;
+        also.innerHTML = `${t("care.also")} ${out.also_ask.map((r) => `<button type="button" class="goal-btn care-also-btn" data-region="${r}">${t(`care.region.${r}`)}</button>`).join(" ")}`;
+        also.querySelectorAll(".care-also-btn").forEach((b) => { b.onclick = () => { tight[b.dataset.region] = "tight"; b.remove(); paint(); }; });
+        paint();
+      } catch (error) {
+        reader.textContent = t("care.err", { e: error.message });
+      } finally { readBtn.disabled = false; }
+    };
+    mountCare(root);
+    mountAsk(root);
     // a retry after a failed save reuses the request id of an unchanged answer, so nothing is written twice
     const ids = {};
     const once = (name, body) => { const sig = JSON.stringify(body); if (ids[name]?.sig !== sig) ids[name] = { sig, id: crypto.randomUUID() }; return { ...body, request_id: ids[name].id }; };
@@ -222,6 +298,10 @@ export default {
       if (feelChanged || sorenessChanged) writes.push(["checkin", { date: p.today, levels: sorenessChanged ? levels : null, feel: choice.feel }]);
       if ((body || choice.mind || choice.task) && (moodChanged || choice.energy != null || sorenessChanged))
         writes.push(["restore", once("restore", { op: "checkin", body, mind: choice.mind, task: choice.task })]);
+      if (Object.keys(tight).length) {
+        said = root.querySelector("#care-said")?.value.trim() || said;
+        writes.push(["care", once("care", { op: "report", tight: { ...tight }, said, signs: [...signs], cause, parsed_by: parsedBy })]);
+      }
       if (!writes.length) { msg.textContent = t("now.nothing"); return; }
       const save = root.querySelector("#now-save");
       save.disabled = true; msg.textContent = t("rr.saving");

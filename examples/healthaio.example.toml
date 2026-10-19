@@ -66,3 +66,12 @@ last_meal_gap_h = 3
 [plan.screen]
 entertainment_max_hours = 3
 work_min_hours = 4
+
+# An assistant that reads the sentence you type on Recovery about where it feels tight ("neck and chest tight after
+# sitting") and picks the places and feelings from fixed lists. Off by default; when on, that sentence (and nothing
+# else) is sent to Anthropic's API. Needs `pip install anthropic` and a key the Anthropic SDK finds itself
+# (ANTHROPIC_API_KEY, or `ant auth login`). Without it the sentence is read with fixed word lists.
+[assistant]
+enabled = false
+# model = "claude-opus-5-5"
+# effort = "low"

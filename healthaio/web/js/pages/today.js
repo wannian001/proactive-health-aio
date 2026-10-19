@@ -7,6 +7,7 @@ import { COLOR, icon, STATE_ICON } from "../icons.js";
 import { worseLine } from "./drain.js";
 import { helping } from "./effects.js";
 import { nowItem, nowLine, quietSuggestion } from "../restore-ui.js";
+import { askHtml, mountAsk } from "../care-ui.js";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const chip = (cls, text, glyph = "") => `<span class="chip ${cls}">${glyph}${esc(text)}</span>`;
@@ -114,7 +115,7 @@ function morningHtml(p) {
     <div class="ring-wrap"><div id="ring" style="width:100%;max-width:360px"></div>${legend}</div>
     <div class="stack" style="gap:var(--s-5)">
       <div class="verdict"><span class="eyebrow" ${r.as_of ? `title="${esc(t("recovery.as_of", { day: day(r.as_of) }))}"` : ""}>${t("recovery.eyebrow")}</span>
-        <p class="lede" style="font-size:var(--t-3xl);margin:0">${t(`recovery.${r.verdict}`)}</p>${self}${nowLine(p.restore)}${behind}</div>
+        <p class="lede" style="font-size:var(--t-3xl);margin:0">${t(`recovery.${r.verdict}`)}</p>${self}${nowLine(p.restore)}${askHtml(p.care_ask)}${behind}</div>
       <div><h2 class="section-title">${t("today.title")}</h2>${dayLines(p)}${tonightHtml(p)}</div>
     </div></div>${todoHtml(p)}</section>`;
 }
@@ -240,6 +241,7 @@ export default {
       <div class="grid">${morningHtml(daily)}${linesHtml(p)}</div>`;
   },
   mount(root, p) {
+    mountAsk(root);
     const ringBox = root.querySelector("#ring");
     const now = p.ring.now ? clock(p.ring.now) : clock(p.ring.sleep?.end);
     draw(ringBox, (w) => dayRing(p.ring, { size: Math.max(260, Math.min(360, w)), center: now, centerSub: p.ring.now ? t("ring.now") : day(p.day) }));

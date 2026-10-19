@@ -973,3 +973,19 @@ main > .subnav a { flex: none; white-space: nowrap; }
 .sit-live { margin: 0; }
 .care-stop-fold summary { cursor: pointer; color: var(--ink-3); }
 .care-stop-fold p { margin: 4px 0 0; }
+
+/* Where it feels tight (Recovery's check-in) and the card it leads to */
+.care-tight { margin: 0 0 var(--s-4); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--surface-2); }
+.care-tight > summary { cursor: pointer; font-weight: 600; font-size: var(--t-sm); }
+.care-tight[open] > summary { margin-bottom: var(--s-3); }
+.care-say { display: flex; gap: 8px; margin-bottom: 4px; }
+.care-say input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--line-2); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--t-sm); }
+.care-reader { margin: 0 0 var(--s-3); }
+.care-regions { margin-bottom: var(--s-2); }
+.care-also { margin: var(--s-2) 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.care-sitting { margin: var(--s-2) 0 0; color: var(--ink-2); }
+.care-sitting svg { vertical-align: -2px; }
+.care-blocked { margin: var(--s-3) 0 0; padding: var(--s-3); border-radius: var(--r-md); background: var(--off-soft); color: var(--off-ink); font-weight: 600; }
+.care-ask { display: grid; gap: 6px; margin: var(--s-3) 0 0; }
+.care-ask-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.now-row[hidden], .care-also[hidden] { display: none; }  /* hidden wins over the rows' grid and flex */

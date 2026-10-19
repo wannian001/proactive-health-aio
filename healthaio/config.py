@@ -142,8 +142,13 @@ class Config:
     goals_proposed: List[Dict[str, Any]] = field(default_factory=list)
     # [collect] sources: what `healthaio collect` (the Mac app, every few hours) imports by itself
     collect_sources: List[str] = field(default_factory=lambda: list(DEFAULT_COLLECT))
-    # [updates] check: whether to ask GitHub once a day for a newer version (the app's only request to the internet)
+    # [updates] check: whether to ask GitHub once a day for a newer version
     check_updates: bool = True
+    # [assistant]: an optional assistant that reads the sentence you type about where it feels tight (assistant.py).
+    # Off by default; when on, that sentence (and nothing else) is sent to the model below
+    assistant_enabled: bool = False
+    assistant_model: str = "claude-opus-5-5"
+    assistant_effort: str = "low"
 
     @property
     def tz(self):
@@ -262,6 +267,17 @@ def load(path: Optional[Path] = None, data_dir: Optional[Path] = None) -> Config
         if not isinstance(updates["check"], bool):
             raise ConfigError("updates.check must be true or false")
         cfg.check_updates = updates["check"]
+    assistant = raw.get("assistant", {})
+    if assistant.get("enabled") is not None:
+        if not isinstance(assistant["enabled"], bool):
+            raise ConfigError("assistant.enabled must be true or false")
+        cfg.assistant_enabled = assistant["enabled"]
+    if assistant.get("model") is not None:
+        cfg.assistant_model = str(assistant["model"])
+    if assistant.get("effort") is not None:
+        if assistant["effort"] not in ("low", "medium", "high", "xhigh", "max"):
+            raise ConfigError("assistant.effort must be low, medium, high, xhigh or max")
+        cfg.assistant_effort = assistant["effort"]
 
     sleep = plan.get("sleep", {})
     cfg.sleep = SleepPlan(target_hours=_num(sleep.get("target_hours"), "plan.sleep.target_hours"),

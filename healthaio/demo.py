@@ -713,6 +713,14 @@ def generate(out: Path, today: Optional[date] = None, now: Optional[datetime] = 
     from .config import load
     from .modules import sitting
     sam.rest_history(load(config))
+    # last night Sam said where it felt tight after a long day at the laptop, and did one move: Today asks how it is now
+    from . import care_log
+    evening = sam.now.replace(hour=21, minute=10) - timedelta(days=1)
+    care_log.from_browser(load(config), {"op": "report", "request_id": "demo-care-00001", "tight": {"neck": "tight", "chest": "tight"},
+                                         "said": "Head poking forward after a long day at the laptop, neck and chest tight", "cause": "sitting",
+                                         "parsed_by": "rules"}, evening)
+    care_log.from_browser(load(config), {"op": "done", "request_id": "demo-care-00002", "routine": "chin_tuck", "why": "care"},
+                          evening + timedelta(minutes=6))
     # Sam has been at the laptop since 17:45, as the Mac app would say: the demo opens on the sitting reminder
     sitting.note(load(config), sam.now.replace(hour=17, minute=45), sam.now - timedelta(minutes=1))
     return config

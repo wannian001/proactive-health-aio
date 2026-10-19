@@ -12,7 +12,7 @@ from .. import stats
 from ..context import FOCUS, FUN, Context, iso
 from . import food as food_page
 from . import plans
-from . import sitting
+from . import care, sitting
 
 SPARK_DAYS = 14
 STALE_SCREEN_DAYS = 2  # the screens card looks at yesterday; more than 2 days behind means tracking stopped
@@ -276,6 +276,7 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
         "actions": None if picked != ctx.today else actions.build(ctx, picked, rec, drain_card),
         "self": self_report(ctx, picked),
         "sitting": sitting.light(ctx, picked),
+        "care_ask": care.build(ctx, picked)["ask"] if picked == ctx.today else [],  # yesterday's tight spots: how now?
         "activity": activity(ctx, picked),
         "attention": att,
         "week": week_load(ctx, picked),

@@ -27,7 +27,7 @@ from typing import Any, Callable, Dict, Optional
 from urllib.parse import parse_qs, urlsplit
 
 from . import __version__, capture, goal_log, iphone, kit, phone, update
-from . import care_log, checkin, restore_log, recovery_log
+from . import assistant, care_log, checkin, restore_log, recovery_log
 from .config import Config
 from .context import Context
 from .modules import PAGES
@@ -237,6 +237,8 @@ def make_handler(cfg: Config, now: Callable[[], Optional[datetime]] = lambda: No
                 return self._checkin(restore_log.from_browser)
             if path == "/api/care":
                 return self._checkin(care_log.from_browser)
+            if path == "/api/care-parse":  # reads a sentence; with [assistant] on, it is the one request that leaves this computer for it
+                return self._checkin(assistant.from_browser)
             return self._json(404, {"error": "nothing to write here"})
 
         def _same_site(self) -> bool:

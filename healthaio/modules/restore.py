@@ -80,10 +80,54 @@ def situation(ctx, current=None):
                      "logged_carbs_g": round(sum(carbs), 1) if carbs else None}}
 
 
+MIN_ANSWERED = 2  # an activity is put forward by name once you have said how it went at least this often
+
+
+def milestones(ctx):
+    """Something done today worth a reward: a deadline handed in (due yesterday or today and marked submitted or
+    done) or a workout of 20 minutes or more. Rest is never earned this way; this only adds a nicer suggestion."""
+    out = []
+    if any(d["due"].date() in (ctx.today, ctx.today - timedelta(days=1)) and d.get("status") in ("submitted", "done")
+           for d in ctx.store.rows("deadlines")):
+        out.append("deadline")
+    if any(w["start"].date() == ctx.today and w["start"] <= ctx.now and (w["end"] - w["start"]) >= timedelta(minutes=20)
+           for w in ctx.store.rows("workouts")):
+        out.append("workout")
+    return out
+
+
+def screens_heavy(ctx):
+    """Yesterday's entertainment & social over the plan's cap: rewards then lean away from screens."""
+    from .time import stim_series
+    limit = ctx.cfg.screen.entertainment_max_hours
+    fun = stim_series(ctx)["fun"].get(ctx.today - timedelta(days=1))
+    return limit is not None and fun is not None and fun > limit * 60
+
+
+def suggest(ctx, key, tried_rows):
+    """One activity by name, from your own answers: after a hard spell (the body below normal, or you said you're
+    tired), the one that most often left you better; after something done (milestones), the one that most often left
+    you better and glad, away from screens if yesterday's were heavy. None until an activity has MIN_ANSWERED answers."""
+    known = [b for b in tried_rows if b["activity"] in restore_log.ACTIVITIES and b["answered"] >= MIN_ANSWERED]
+    if key in ("signals", "trend", "reported", "gentler"):
+        best = max(known, key=lambda b: (b["better"] / b["answered"], b["times"]), default=None)
+        if best and best["better"] / best["answered"] >= 0.5:
+            return {"why": "restore", "activity": best["activity"], "better": best["better"], "glad": best["glad"], "answered": best["answered"]}
+        return None
+    done = milestones(ctx)
+    if not done or key in ("active", "quiet"):
+        return None
+    pool = [b for b in known if not (b["activity"] == "play" and screens_heavy(ctx))]
+    best = max(pool, key=lambda b: ((b["better"] + b["glad"]) / (2 * b["answered"]), b["times"]), default=None)
+    if best and (best["better"] + best["glad"]) / (2 * best["answered"]) >= 0.5:
+        return {"why": "reward", "for": done, "activity": best["activity"], "better": best["better"], "glad": best["glad"], "answered": best["answered"]}
+    return None
+
+
 def tried(sessions):
     """What each activity has done for you, from your own reflections: finished sessions, how many you said how it went,
     how many left you better, how many you were glad of (and how many left you more tired). Ranked by the share that
-    were better or glad among the ones you answered; activities you never answered about come last. Unanswered is
+    were better or glad among the ones you answered (share); fewer than MIN_ANSWERED answers come after. Unanswered is
     unknown, never "it didn't help"."""
     by = {}
     for s in sessions:
@@ -99,15 +143,25 @@ def tried(sessions):
             b["better"] += f.get("change") == "better"
             b["worse"] += f.get("change") == "worse"
             b["glad"] += f.get("enjoyment") == "yes"
-    score = lambda b: (b["better"] + b["glad"]) / (2 * b["answered"]) if b["answered"] else -1
-    return sorted(by.values(), key=lambda b: (score(b), b["times"]), reverse=True)
+    return sorted(by.values(), key=lambda b: (share(b), b["times"]), reverse=True)
+
+
+def share(b):
+    """Better or glad, among the times you answered; -1 below MIN_ANSWERED answers (too few to put it ahead)."""
+    return (b["better"] + b["glad"]) / (2 * b["answered"]) if b["answered"] >= MIN_ANSWERED else -1
 
 
 def build(ctx, day=None):
     current = restore_log.replay(restore_log.read(ctx.cfg))
+    rows = tried(current["sessions"])
+    s = situation(ctx, current)
+    s["suggest"] = suggest(ctx, s["key"], rows)
+    # the library in the order your own answers put it (better after, then glad), untried ones after, as listed
+    score = {b["activity"]: (share(b), b["times"]) for b in rows}
+    order = sorted(restore_log.ACTIVITIES, key=lambda a: score.get(a, (-1, 0)), reverse=True)
     return {"page": "restore", "today": iso(ctx.today), "demo": ctx.cfg.demo,
-            "situation": situation(ctx, current), "active": current["active"],
-            "sessions": current["sessions"][:30], "tried": tried(current["sessions"]),
+            "situation": s, "active": current["active"],
+            "sessions": [x for x in current["sessions"] if x["status"] != "removed"][:30], "tried": rows,
             "rewards": [r for r in current["rewards"] if r["status"] == "planned"] +
                        [r for r in current["rewards"] if r["status"] != "planned"][:30],
-            "activities": list(restore_log.ACTIVITIES)}
+            "activities": order}

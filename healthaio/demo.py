@@ -464,6 +464,15 @@ class Sam:
             if rng.random() < 0.75:
                 events.append((end + timedelta(minutes=rng.randint(1, 20)), "feedback",
                                {"change": pick(change[activity], rng.random()), "enjoyment": glad(joy[activity], rng.random())}, k))
+        # the Mac app also wrote down a few breaks by itself: up after a long stretch at the laptop, a few answered
+        for k in (13, 11, 8, 6, 4, 2):
+            day = self.today - timedelta(days=k)
+            off = datetime.combine(day, time(15, rng.randint(0, 50)))
+            back = off + timedelta(minutes=rng.randint(5, 15))
+            events.append((back, "auto", {"start": off, "after": rng.randint(55, 110)}, ("auto", k)))
+            if rng.random() < 0.6:
+                events.append((back + timedelta(minutes=1), "feedback", {"change": "better" if rng.random() < 0.6 else "same",
+                                                                         "enjoyment": "neutral"}, ("auto", k)))
         plans = [(30, 25, "reward_cancel", "New running shoes", "after ten runs this month"),
                  (20, 16, "reward_done", "Hotpot after handing in the assignment", "with the study group"),
                  (2, None, None, "Gallery with friends on Saturday", "")]
@@ -475,6 +484,10 @@ class Sam:
         ids, n = {}, 0
         for at, op, fields, key in sorted(events, key=lambda e: e[0]):
             n += 1
+            if op == "auto":
+                restore_log.auto_break(cfg, fields["start"], at, fields["after"])
+                ids[key] = restore_log.replay(restore_log.read(cfg))["sessions"][0]["id"]
+                continue
             request = {"op": op, "request_id": f"demo-rest-{n:05d}", **fields}
             if op not in ("start", "reward_plan"):
                 request["ref"] = ids[key]

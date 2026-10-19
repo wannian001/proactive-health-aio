@@ -25,6 +25,7 @@ BREAK_MIN = 5       # this long away from the computer ends a stretch
 LONG_MIN = 50       # a stretch this long gets the reminder (and counts as a long one on the pages)
 REPEAT_MIN = 30     # and again this often while it goes on
 FRESH_MIN = 3       # the Mac app's word on right now is trusted this long
+AUTO_BREAK_MIN = 3  # getting up this long after a long stretch is written down as a rest by itself
 DAYS = 14           # the days drawn
 BASE_DAYS = 28      # "your usual" longest stretch: the median over this many days before
 MIN_BASE = 7        # with at least this many days that had computer time
@@ -90,14 +91,33 @@ def live(ctx: Context) -> Optional[Dict[str, Any]]:
     return {"since": iso(since), "seen": iso(seen), "minutes": round((now - since).total_seconds() / 60)}
 
 
-def note(cfg, since: Optional[datetime], seen: Optional[datetime] = None) -> None:
-    """What the Mac app tells the server: the current stretch started at `since` (None: you are on a break)."""
+def note(cfg, since: Optional[datetime], seen: Optional[datetime] = None, off_since: Optional[datetime] = None) -> None:
+    """What the Mac app tells the server: the current stretch started at `since`, or (since None) you are on a break
+    that began at `off_since`. A break of at least AUTO_BREAK_MIN after a stretch of LONG_MIN or more is written
+    down as a rest by itself (restore_log.auto_break) when the next stretch starts: nothing to start or stop."""
     path = live_path(cfg)
+    before = state.read_json(path) or {}
+    seen = seen or datetime.now((since or off_since or datetime.now()).tzinfo)
     if since is None:
-        path.unlink(missing_ok=True)
+        last = None
+        try:
+            if before.get("since"):
+                start = datetime.fromisoformat(before["since"])
+                last = round(((off_since or seen) - start).total_seconds() / 60)
+        except (TypeError, ValueError):
+            last = None
+        state.write_json(path, {"off_since": (off_since or seen).isoformat(timespec="seconds"), "after": last, "source": "mac"})
         return
-    state.write_json(path, {"since": since.isoformat(timespec="seconds"), "seen": (seen or datetime.now(since.tzinfo)).isoformat(timespec="seconds"),
-                            "source": "mac"})
+    try:
+        off, after = before.get("off_since"), before.get("after")
+        if off and after and after >= LONG_MIN:
+            off = datetime.fromisoformat(off)
+            if timedelta(minutes=AUTO_BREAK_MIN) <= since - off <= timedelta(hours=2):
+                from .. import restore_log
+                restore_log.auto_break(cfg, off, since, after)
+    except (TypeError, ValueError):
+        pass
+    state.write_json(path, {"since": since.isoformat(timespec="seconds"), "seen": seen.isoformat(timespec="seconds"), "source": "mac"})
 
 
 def nudge(ctx: Context) -> Dict[str, Any]:

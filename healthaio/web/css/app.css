@@ -989,3 +989,9 @@ main > .subnav a { flex: none; white-space: nowrap; }
 .care-ask { display: grid; gap: 6px; margin: var(--s-3) 0 0; }
 .care-ask-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .now-row[hidden], .care-also[hidden] { display: none; }  /* hidden wins over the rows' grid and flex */
+
+/* Rest & rewards: one activity by name, from your own answers, with its start button */
+.rr-suggest { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 12px 14px; border-radius: var(--r-md); background: var(--accent-soft); }
+.rr-suggest > div { display: grid; gap: 2px; }
+.rr-suggest .rr-msg { grid-column: 1 / -1; margin: 0; }
+@media (max-width: 520px) { .rr-suggest { grid-template-columns: auto minmax(0, 1fr); } .rr-suggest .rr-button { grid-column: 1 / -1; } }

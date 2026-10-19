@@ -9,7 +9,19 @@ export const ACTIVITY = {
   sit: { icon: "sleep", category: "quiet" }, music: { icon: "music", category: "quiet" },
   walk: { icon: "walk", category: "outside" }, friend: { icon: "communication", category: "social" },
   photo: { icon: "camera", category: "outside" }, play: { icon: "fun", category: "playful" },
+  break: { icon: "laptop", category: "quiet" },  // written down by the app after a long stretch at the computer
 };
+const forText = (sg) => (sg.for || []).map((x) => t(`rr.for.${x}`)).join(t("ui.list_sep"));
+// one activity by name, from your own answers (modules/restore.py suggest), with a one-tap start
+export function suggestHtml(p) {
+  const sg = p?.situation?.suggest;
+  if (!sg || p.active) return "";
+  const name = t(`rr.activity.${sg.activity}`);
+  return `<div class="rr-suggest"><span class="rr-glyph">${activityIcon(sg.activity, 20)}</span>
+    <div><b>${esc(t(sg.why === "reward" ? "rr.suggest.reward" : "rr.suggest.restore", { activity: name, for: forText(sg) }))}</b>
+      <span class="xs muted">${esc(t("rr.suggest.stats", { n: sg.answered, b: sg.better, g: sg.glad }))}</span></div>
+    ${button("start", "rr.start", `data-rr-activity="${sg.activity}"`, true)}<p class="rr-msg xs" role="status"></p></div>`;
+}
 export const quietSuggestion = (p) => p && ["quiet", "engaged", "active"].includes(p.situation.key);
 const disabled = () => isStatic ? " disabled" : "";
 const at = (value) => ({ date: day(value), time: clock(value) });
@@ -44,7 +56,7 @@ export function nextStep(p, { details = true, link = true, controls = true } = {
       <p>${esc(t(`rr.why.${key}`, { time: clock(s.quiet_until) }))}</p>
       ${controls ? `<div class="rr-actions">${link ? `<a class="rr-button primary" href="${goal ? "#goals" : "#restore"}">${t(key === "active" ? "rr.current" : goal ? "rr.goals" : "rr.choose")}</a>` : ""}
         ${key === "quiet" ? button("resume", "rr.resume") : key !== "active" ? button("quiet", "rr.later") : ""}</div>` : ""}
-      ${details ? evidence(s) : ""}<p class="rr-msg xs" role="status"></p></div></section>`;
+      ${suggestHtml(p)}${details ? evidence(s) : ""}<p class="rr-msg xs" role="status"></p></div></section>`;
 }
 
 const CHOICES = { body: ["comfortable", "tired", "sore"], mind: ["clear", "tired", "tense", "bored", "engaged"], task: ["easy", "fit", "hard"] };
@@ -63,10 +75,17 @@ export function nowLine(p) {
 
 // Today's "what to adjust" opens with this, when there is something to say right now
 export function nowItem(p) {
+  const sg = p?.situation?.suggest;
+  if (p && sg?.why === "reward" && ["steady", "unknown", "ahead", "engaged"].includes(p.situation.key)) {
+    return `<a class="todo-item todo-now" href="#restore"><span class="todo-icon">${activityIcon(sg.activity, 20)}</span>
+      <span class="todo-body"><span class="eyebrow">${t("now.item")}</span><b>${esc(t("rr.suggest.reward", { activity: t(`rr.activity.${sg.activity}`), for: forText(sg) }))}</b>
+      <span class="small muted">${esc(t("rr.suggest.stats", { n: sg.answered, b: sg.better, g: sg.glad }))}</span></span></a>`;
+  }
   if (!p || ["steady", "unknown"].includes(p.situation.key)) return "";
   const s = p.situation, key = s.key, goal = ["challenge", "smaller"].includes(key);
   return `<a class="todo-item todo-now" href="${goal ? "#goals" : "#restore"}"><span class="todo-icon">${activityIcon(key === "active" ? p.active.activity : goal ? "target" : "sleep", 20)}</span>
-    <span class="todo-body"><span class="eyebrow">${t("now.item")}</span><b>${esc(t(`rr.title.${key}`))}</b><span class="small muted">${esc(t(`rr.why.${key}`, { time: clock(s.quiet_until) }))}</span></span></a>`;
+    <span class="todo-body"><span class="eyebrow">${t("now.item")}</span><b>${esc(t(`rr.title.${key}`))}</b><span class="small muted">${esc(t(`rr.why.${key}`, { time: clock(s.quiet_until) }))}</span>
+      ${sg?.why === "restore" ? `<span class="small">${esc(t("rr.suggest.restore", { activity: t(`rr.activity.${sg.activity}`) }))} · ${esc(t("rr.suggest.stats", { n: sg.answered, b: sg.better, g: sg.glad }))}</span>` : ""}</span></a>`;
 }
 
 export function activeHtml(p) {
@@ -99,14 +118,15 @@ export function triedHtml(p) {
 
 export function historyHtml(p, { limit = 5, head = true } = {}) {
   if (!p) return "";
-  const sessions = p.sessions.filter((s) => s.status !== "active").slice(0, limit);
+  const sessions = p.sessions.filter((s) => s.status !== "active" && s.status !== "removed").slice(0, limit);
   return `<section class="rr-history">${head ? `<h2>${t("rr.history")}</h2><p class="small muted">${t("rr.history_hint")}</p>` : `<p class="small muted">${t("rr.history_hint")}</p>`}
     ${!sessions.length ? `<div class="rr-empty">${icon("clock", 26)}<p>${t("rr.history_empty")}</p></div>` : sessions.map((s, i) => {
       const f = s.feedback, status = t(s.status === "cancelled" ? "rr.cancelled" : "rr.finished");
       return `<article class="rr-session" data-rr-session="${esc(s.id)}"><div class="rr-session-head"><span class="rr-glyph">${activityIcon(s.activity, 20)}</span><div><h3>${t(`rr.activity.${s.activity}`)}</h3><span class="xs muted">${t("rr.started", at(s.started_at))}</span></div><span class="chip">${status}</span></div>
         <p class="small rr-reflection">${s.status === "cancelled" ? status : f ? [f.change ? `${t("rr.change")} · ${t(`rr.${f.change}`)}` : "", f.enjoyment ? `${t("rr.enjoyment")} ${t(`rr.${f.enjoyment}`)}` : ""].filter(Boolean).map(esc).join(" / ") : t("rr.unknown_feedback")}</p>
         ${s.status === "finished" ? feedbackHtml(s, i === 0) : ""}
-        <details class="rr-context"><summary>${t("rr.context")}</summary><p class="xs muted">${t("rr.ends", at(s.ended_at))}</p><p class="small">${esc(t(`rr.title.${s.context.key}`))}</p>${evidence(s.context)}</details></article>`;
+        ${s.auto ? `<p class="xs muted">${esc(t("rr.auto_note", { n: s.after || 0 }))} ${button("remove", "rr.remove", `data-rr-ref="${esc(s.id)}"`)}</p>`
+          : s.context ? `<details class="rr-context"><summary>${t("rr.context")}</summary><p class="xs muted">${t("rr.ends", at(s.ended_at))}</p><p class="small">${esc(t(`rr.title.${s.context.key}`))}</p>${evidence(s.context)}</details>` : ""}</article>`;
     }).join("")}</section>`;
 }
 

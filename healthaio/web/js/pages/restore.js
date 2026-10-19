@@ -8,8 +8,10 @@ let tab = "rest", filter = "all", selected = null;
 const disabled = () => isStatic ? " disabled" : "";
 
 function library(p) {
+  // in the order your own answers put them; each says what it has done for you so far
+  const stat = (key) => { const b = (p.tried || []).find((x) => x.activity === key); return b && b.answered ? t("rr.card_stat", { n: b.answered, b: b.better, g: b.glad }) : t(`rr.${ACTIVITY[key].category}`); };
   const cards = p.activities.filter((key) => filter === "all" || ACTIVITY[key].category === filter).map((key) => `<button type="button" class="rr-activity" data-rr-pick="${key}" aria-pressed="${selected === key}"${p.active ? " disabled" : ""}>
-    <span class="rr-glyph">${activityIcon(key, 26)}</span><span><b>${t(`rr.activity.${key}`)}</b><small>${t(`rr.${ACTIVITY[key].category}`)}</small></span><span class="rr-card-arrow" aria-hidden="true">${selected === key ? "✓" : "↗"}</span></button>`).join("");
+    <span class="rr-glyph">${activityIcon(key, 26)}</span><span><b>${t(`rr.activity.${key}`)}</b><small>${esc(stat(key))}</small></span><span class="rr-card-arrow" aria-hidden="true">${selected === key ? "✓" : "↗"}</span></button>`).join("");
   const choice = selected && !p.active ? `<div class="rr-selection"><h3>${t(`rr.activity.${selected}`)}</h3><p class="small muted">${t(`rr.desc.${selected}`)}</p><p class="xs muted">${t("rr.no_timer")}</p>${restoreButton("start", "rr.start", `data-rr-activity="${selected}"`, true)}<p class="rr-msg small" role="status"></p></div>` : "";
   return `${activeHtml(p)}<div class="rr-library-head"><h2>${t("rr.free")}</h2><div class="rr-filters" aria-label="${esc(t("rr.rest_tab"))}">${["all", "quiet", "outside", "social", "playful"].map((key) => `<button type="button" data-rr-filter="${key}" aria-pressed="${key === filter}">${t(`rr.${key}`)}</button>`).join("")}</div></div>
     <div class="rr-activities">${cards}</div>${choice}<a class="rr-more-link" href="#followup">${t("rr.followup")} →</a>`;

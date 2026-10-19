@@ -95,7 +95,7 @@ class FoldedPages(unittest.TestCase):
     def test_what_was_tried_is_ranked_from_your_own_answers(self):
         tried = self.page["followup"]["restore"]["tried"]
         self.assertTrue(tried)
-        share = lambda b: (b["better"] + b["glad"]) / (2 * b["answered"]) if b["answered"] else -1
+        from healthaio.modules.restore import share  # too few answers rank after the rest
         self.assertEqual([share(b) for b in tried], sorted((share(b) for b in tried), reverse=True))
 
 

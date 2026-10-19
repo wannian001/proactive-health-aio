@@ -15,8 +15,11 @@ from . import state
 
 FILENAME = "restore.jsonl"
 ACTIVITIES = ("sit", "music", "walk", "friend", "photo", "play")
+# written by the app itself, not chosen from the library: a break away from the computer after a long stretch, as
+# the Mac app saw it (auto_break); "remove" takes back one that wasn't a rest
+AUTO_ACTIVITIES = ("break",)
 OPS = {"checkin", "quiet", "resume", "start", "finish", "cancel", "feedback",
-       "reward_plan", "reward_done", "reward_cancel"}
+       "reward_plan", "reward_done", "reward_cancel", "auto", "remove"}
 CHOICES = {"body": ("comfortable", "tired", "sore"),
            "mind": ("clear", "tired", "tense", "bored", "engaged"),
            "task": ("easy", "fit", "hard")}
@@ -63,6 +66,14 @@ def replay(entries):
             out["sessions"][e["id"]] = {"id": e["id"], "activity": e["activity"],
                 "started_at": e["at"], "status": "active", "ended_at": None,
                 "feedback": None, "context": e["context"]}
+        elif op == "auto":
+            out["sessions"][e["id"]] = {"id": e["id"], "activity": e["activity"], "started_at": e["start"],
+                "status": "finished", "ended_at": e["end"], "feedback": None, "context": None, "auto": True,
+                "after": e.get("after")}
+        elif op == "remove":
+            s = out["sessions"].get(e["ref"])
+            if s:
+                s["status"] = "removed"
         elif op in ("finish", "cancel", "feedback"):
             s = out["sessions"].get(e["ref"])
             if not s:
@@ -101,7 +112,7 @@ def from_browser(cfg, request, now=None):
     allowed = {"op", "request_id"} | {
         "checkin": set(CHOICES), "start": {"activity"}, "finish": {"ref"}, "cancel": {"ref"},
         "feedback": {"ref", "change", "enjoyment"}, "reward_plan": {"title", "note"},
-        "reward_done": {"ref"}, "reward_cancel": {"ref"},
+        "reward_done": {"ref"}, "reward_cancel": {"ref"}, "remove": {"ref"},
     }.get(op, set())
     if request.keys() - allowed:
         raise ValueError("unexpected fields in recovery action")
@@ -148,6 +159,13 @@ def from_browser(cfg, request, now=None):
                 if change is None and enjoyment is None:
                     raise ValueError("choose at least one reflection, or skip it")
                 event.update(change=change, enjoyment=enjoyment)
+        elif op == "auto":
+            raise ValueError("breaks are written by the app, not the page")
+        elif op == "remove":
+            s = next((s for s in current["sessions"] if s["id"] == request.get("ref")), None)
+            if not s or not s.get("auto") or s["status"] != "finished":
+                raise ValueError("only a break the app wrote down can be taken back; refresh the page")
+            event["ref"] = s["id"]
         elif op == "reward_plan":
             event.update(title=_text(request.get("title"), "title", True),
                          note=_text(request.get("note", ""), "note"))
@@ -164,3 +182,28 @@ def from_browser(cfg, request, now=None):
             handle.flush()
             os.fsync(handle.fileno())
     return {"ok": True, "id": event["id"]}
+
+
+def auto_break(cfg, start, end, after: int) -> bool:
+    """A break away from the computer after a long stretch (`after` minutes), as the Mac app saw it: written down as a
+    finished rest by itself, so there is nothing to start or stop. Once per break (by its start); False when it was
+    already there or would land before the last record."""
+    request = {"op": "auto", "request_id": f"auto-break-{start.strftime('%Y%m%d%H%M%S')}"}
+    with state.write_lock(cfg):
+        entries = read(cfg)
+        if any(e.get("request_id") == request["request_id"] for e in entries):
+            return False
+        when = moment(cfg, end)
+        if entries and when < state.parse_iso(entries[-1]["at"]):
+            return False
+        event = {"v": 1, "id": secrets.token_hex(12), "at": when.isoformat(timespec="seconds"), "op": "auto",
+                 "request_id": request["request_id"], "request": request, "activity": "break", "source": "mac",
+                 "start": moment(cfg, start).isoformat(timespec="seconds"), "end": when.isoformat(timespec="seconds"), "after": int(after)}
+        file = path(cfg)
+        file.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(file, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+    return True

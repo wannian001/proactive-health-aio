@@ -95,7 +95,38 @@ class Live(Base):
         self.assertEqual((out["kind"], out["minutes"]), ("sitting", 55))
         self.assertTrue((Path(self.tmp.name) / ".healthaio" / "sitting.json").exists())
         self.assertIsNone(run("--off", "--now", "2026-10-14T16:01")["kind"])
-        self.assertFalse((Path(self.tmp.name) / ".healthaio" / "sitting.json").exists())
+        kept = json.loads((Path(self.tmp.name) / ".healthaio" / "sitting.json").read_text())
+        self.assertEqual((kept["off_since"][:16], kept["after"]), ("2026-10-14T16:01", 56))  # the break, for the rest written down later
+
+
+class AutoBreak(Base):
+    """Getting up after a long stretch is written down as a rest by itself, once, and can be taken back."""
+    def sessions(self):
+        return restore_log.replay(restore_log.read(self.cfg))["sessions"]
+
+    def test_a_break_after_a_long_stretch_is_a_rest(self):
+        start = NOW - timedelta(minutes=70)
+        sitting.note(self.cfg, start, start)
+        sitting.note(self.cfg, None, NOW, off_since=NOW)                          # up after 70 minutes
+        sitting.note(self.cfg, NOW + timedelta(minutes=8), NOW + timedelta(minutes=8))  # back 8 minutes later
+        s = self.sessions()
+        self.assertEqual([(x["activity"], x["status"], x["auto"], x["after"]) for x in s], [("break", "finished", True, 70)])
+        sitting.note(self.cfg, NOW + timedelta(minutes=8), NOW + timedelta(minutes=9))  # the same stretch again: once
+        self.assertEqual(len(self.sessions()), 1)
+        restore_log.from_browser(self.cfg, {"op": "remove", "request_id": "remove-00001", "ref": s[0]["id"]}, NOW + timedelta(minutes=20))
+        self.assertEqual(self.sessions()[0]["status"], "removed")
+
+    def test_a_short_stretch_or_a_short_break_is_not(self):
+        sitting.note(self.cfg, NOW - timedelta(minutes=30), NOW - timedelta(minutes=30))
+        sitting.note(self.cfg, None, NOW, off_since=NOW)
+        sitting.note(self.cfg, NOW + timedelta(minutes=10), NOW + timedelta(minutes=10))
+        sitting.note(self.cfg, None, NOW + timedelta(minutes=70), off_since=NOW + timedelta(minutes=70))
+        sitting.note(self.cfg, NOW + timedelta(minutes=71), NOW + timedelta(minutes=71))  # one minute up: not a break
+        self.assertEqual(self.sessions(), [])
+
+    def test_the_page_cannot_write_one(self):
+        with self.assertRaises(ValueError):
+            restore_log.from_browser(self.cfg, {"op": "auto", "request_id": "auto-000001"}, NOW)
 
 
 class Routines(unittest.TestCase):

@@ -395,7 +395,8 @@ class Sam:
         """Morning check-ins on nine mornings in ten after a workout and one in two otherwise (the morning after is
         when Sam wants to know how he came back): the regions a workout loads are sore the next morning
         and fading the one after (upper-body strength on Mondays: torso and upper arms; lower body on Fridays: hips
-        and calves; runs: calves), now and then a stiff neck, and a check-in with nothing sore otherwise."""
+        and calves; runs: calves), now and then a stiff neck, and a check-in with nothing sore otherwise. He always
+        checks in this morning, after a long Sunday at the desk: a stiff neck if nothing else is sore."""
         rng = random.Random(SEED + 31)
         hits: Dict[date, Dict[str, int]] = {}
         for w in self.workouts:
@@ -419,16 +420,67 @@ class Sam:
         start = self.today - timedelta(days=BODY_DAYS - 1)
         for k in range(BODY_DAYS):
             day = start + timedelta(days=k)
-            if rng.random() > (0.9 if day in after else 0.5):
+            if rng.random() > (0.9 if day in after else 0.5) and day != self.today:
                 continue  # no check-in that morning
             sore = dict(hits.get(day, {}))
             if rng.random() < 0.05:
+                sore["head"] = 1
+            if day == self.today and not sore:
                 sore["head"] = 1
             if not sore:
                 rows.append({"date": day, "region": "none", "level": 0})
             for region, level in sorted(sore.items()):
                 rows.append({"date": day, "region": region, "level": level})
         return rows
+
+    def rest_history(self, cfg) -> None:
+        """Six weeks of Rest & rewards, written through restore_log like the page does: on about half the days Sam
+        starts one activity (evenings on weekdays, afternoons at the weekend), finishes most, cancels a few, and says
+        how it went on three in four. Walks and time with friends mostly leave him better and glad he did them;
+        gaming is fun but often leaves him no better or more tired; sitting quietly helps without being fun. Three
+        celebrations: one done, one cancelled, one still planned."""
+        from . import restore_log
+        rng = random.Random(SEED + 47)
+        kinds = [("walk", .3, (15, 40)), ("music", .2, (10, 25)), ("friend", .15, (30, 90)), ("sit", .15, (5, 15)),
+                 ("play", .12, (30, 90)), ("photo", .08, (30, 60))]
+        change = {"walk": (.7, .27), "friend": (.7, .27), "photo": (.65, .3), "sit": (.5, .45), "music": (.45, .5), "play": (.2, .45)}
+        joy = {"walk": (.55, .4), "friend": (.85, .12), "photo": (.8, .15), "sit": (.2, .7), "music": (.6, .35), "play": (.8, .15)}
+        pick = lambda p, r: "better" if r < p[0] else "same" if r < p[0] + p[1] else "worse"
+        glad = lambda p, r: "yes" if r < p[0] else "neutral" if r < p[0] + p[1] else "no"
+        events = []  # (when, op, fields, session key)
+        for k in range(42, 0, -1):
+            day = self.today - timedelta(days=k)
+            if rng.random() > 0.48:
+                continue
+            r, acc = rng.random(), 0.0
+            activity, span = next(((a, sp) for a, w, sp in kinds if (acc := acc + w) >= r), kinds[-1][::2])
+            at = datetime.combine(day, time(14 if day.weekday() >= 5 else 17, 30)) + timedelta(minutes=rng.randint(0, 240))
+            events.append((at, "start", {"activity": activity}, k))
+            if rng.random() < 0.08:
+                events.append((at + timedelta(minutes=rng.randint(2, 10)), "cancel", {}, k))
+                continue
+            end = at + timedelta(minutes=rng.randint(*span))
+            events.append((end, "finish", {}, k))
+            if rng.random() < 0.75:
+                events.append((end + timedelta(minutes=rng.randint(1, 20)), "feedback",
+                               {"change": pick(change[activity], rng.random()), "enjoyment": glad(joy[activity], rng.random())}, k))
+        plans = [(30, 25, "reward_cancel", "New running shoes", "after ten runs this month"),
+                 (20, 16, "reward_done", "Hotpot after handing in the assignment", "with the study group"),
+                 (2, None, None, "Gallery with friends on Saturday", "")]
+        for start, end, op, title, note in plans:
+            at = datetime.combine(self.today - timedelta(days=start), time(21, 5))
+            events.append((at, "reward_plan", {"title": title, "note": note}, ("reward", title)))
+            if end:
+                events.append((datetime.combine(self.today - timedelta(days=end), time(20, 50)), op, {}, ("reward", title)))
+        ids, n = {}, 0
+        for at, op, fields, key in sorted(events, key=lambda e: e[0]):
+            n += 1
+            request = {"op": op, "request_id": f"demo-rest-{n:05d}", **fields}
+            if op not in ("start", "reward_plan"):
+                request["ref"] = ids[key]
+            out = restore_log.from_browser(cfg, request, at)
+            if op in ("start", "reward_plan"):
+                ids[key] = out["id"]
 
     def energy_ratings(self, report: List[Dict]) -> List[Dict]:
         """Sam rates his energy on the 0–10 "How you are right now" card on the mornings he rated it: about twice his
@@ -658,4 +710,6 @@ def generate(out: Path, today: Optional[date] = None, now: Optional[datetime] = 
     (out / "goals.jsonl").write_text(json.dumps(proposal, ensure_ascii=False) + "\n", encoding="utf-8")
     # energy said on the "How you are right now" card, kept with its time (see recovery_log)
     (out / "recovery_observations.jsonl").write_text("".join(json.dumps(r) + "\n" for r in sam.energy_ratings(report)), encoding="utf-8")
+    from .config import load
+    sam.rest_history(load(config))
     return config

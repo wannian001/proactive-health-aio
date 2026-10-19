@@ -91,6 +91,7 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
     base.width = overlay.width = cellW; base.height = overlay.height = cellH;
     const body = base.getContext("2d", { willReadFrequently: true }), ink = overlay.getContext("2d");
     if (!body || !ink) throw Error("Canvas unavailable");
+    let knownRegions = null, annotations = {};
     let angle = 0, view = "sore", selected = "", box = { x:0, y:0, size:1 }, alpha;
     const loadView = () => {
       body.clearRect(0, 0, cellW, cellH);
@@ -117,7 +118,7 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
       const style = getComputedStyle(host);
       for (const [region, polygons] of Object.entries(REGIONS[angle])) {
         if (!regions.includes(region)) continue;
-        const value = view === "trained" ? (trained.has(region) ? "trained" : null) : known ? (levels[region] || 0) : null;
+        const value = view === "trained" ? (trained.has(region) ? "trained" : null) : known && (!knownRegions || knownRegions.includes(region)) ? (levels[region] || 0) : null;
         // Preserve the neutral source shading for a recorded zero.
         if (value === 0) continue;
         ink.save(); ink.filter = "blur(5px)"; ink.globalAlpha = value == null ? .28 : value === "trained" ? .55 : [.0,.32,.57,.78][value];
@@ -137,7 +138,7 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
         ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
         ctx.strokeStyle = style.getPropertyValue("--accent").trim() || "#3174bb"; ctx.lineWidth = 2; ctx.stroke();
         const value = known ? t(`sore.level.${levels[selected] || 0}`) : rv("unknown");
-        label.textContent = `${t(`sore.region.${selected}`)} · ${view === "trained" ? (trained.has(selected) ? rv("trainingLegend") : rv("unknown")) : value}`;
+        label.textContent = view === "sore" && annotations[selected] ? annotations[selected] : `${t(`sore.region.${selected}`)} · ${view === "trained" ? (trained.has(selected) ? rv("trainingLegend") : rv("unknown")) : value}`;
         label.style.left = `${Math.max(6, Math.min(width - 150, x + 14))}px`;
         label.style.top = `${Math.max(6, y - 38)}px`;
       }
@@ -177,7 +178,7 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
     return {
       rotate,
       reset() { angle = 0; loadView(); paint(); },
-      update(next) { levels = next.levels; known = next.known; view = next.view; selected = next.selected; paint(); },
+      update(next) { levels = next.levels; known = next.known; knownRegions = next.knownRegions; annotations = next.annotations || {}; view = next.view; selected = next.selected; paint(); },
       dispose,
     };
   } catch {

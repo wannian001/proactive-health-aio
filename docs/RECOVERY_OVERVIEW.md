@@ -11,25 +11,27 @@ sleep, HRV, resting-heart-rate and training-load records. The morning check-in,
 
 ## Meaning and missing data
 
-- Soreness keeps the existing **0–3** scale. The main reading is the maximum
-  recorded regional level, accompanied by affected regions/count, not a mean.
-  No check-in for the selected day remains unknown; old soreness is not promoted
-  to a current reading. A completed existing check-in treats omitted regions as
-  not sore, matching the current CSV contract.
-- Energy keeps the original **0–5** self-report. Zero is valid. A previous-day
-  rating carries its date and an explicit previous-day label; it is never derived
-  from HRV, sleep, the morning feeling or the after-training composite.
-- Neither metric has a validated recovery forecast. The estimate reads
-  **Not yet estimable / 暂无法估计** and the outer track stays empty/dashed. No
-  invented target, recovery percentage or countdown is shown.
+- New current-time check-ins keep the original **0–10** rating with timezone-aware server timestamps.
+  A reported range remains a range; its drawing midpoint is not a training label. Legacy morning
+  soreness **0–3** and energy **0–5** remain separate and are labeled with their original scale.
+- The main soreness reading is the maximum of explicitly recorded regions. With timestamped input,
+  untouched regions stay unknown. Selecting a region never changes whole-person energy.
+- Both cards show a time window and target when personal history supports one. Daily observations
+  produce day windows; dense timestamped observations can produce hour windows. Missing, old,
+  incomplete or insufficient history explains why no time is shown.
+- The purple outer ring is the window midpoint relative to its labeled 24/168-hour scale, not a
+  progress percentage or confidence. No forecast means no outer ring. Algorithm and validation
+  details are in [RECOVERY_FORECAST.md](RECOVERY_FORECAST.md).
+- Related device readings carry their actual dates. Missing workout detail is not evidence of no training.
 - Cardio uses `body.cardio()` unchanged, including the median, actual estimates,
   historical cutoff, comparison and freshness. It is separate from organ coloring.
 - The recent-training layer uses only the last seven days of recorded region
   annotations; an unannotated workout does not imply untrained muscles.
 - Historical Recovery dates apply to both self-report and cardio data.
 
-酸痛保留四档，精力保留 0–5；未知与 0 分分开。恢复时间目前不可估计。
-心肺读取已有长期趋势。模型按现有区域呈现记录，不能推断单块肌肉的状态。
+新打卡采用原始 0–10 分并记录时间；旧四档酸痛、0–5 精力仍保留。时间和目标突出显示，
+有足够历史才出范围。区间自评保持原区间；设备值不代替主观标签。心肺读取已有长期趋势，
+人体只呈现现有区域，不能推断单块肌肉的状态。
 
 ## Illustration and runtime
 

@@ -33,3 +33,9 @@ dist/
 .healthaio/
 # private rest, feelings and celebration history, beside healthaio.toml
 restore.jsonl
+
+# Timestamped private ratings, kept next to the local profile config
+recovery_observations.jsonl
+personal-source.json
+hrv_model.json
+.hrv_model-*.json

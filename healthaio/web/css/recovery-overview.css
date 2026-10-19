@@ -1,4 +1,4 @@
-/* Recovery overview only. Actual scales remain 0–3 soreness and 0–5 energy. */
+/* Recovery overview: original scales retained; timestamped ratings use 0–10. */
 .rec-overview {
   --ov-sore-0:#d7d9dc; --ov-sore-1:#f8dd8b; --ov-sore-2:#eeb947; --ov-sore-3:#d99519;
   --ov-body-unknown:#afb5be; --ov-amber:#d8a227; --ov-jade:#55b996;
@@ -139,4 +139,86 @@
   .ov-estimate b { font-size:15px; }
   .ov-cardio-read strong { font-size:28px; }
   .ov-record b { font-size:14px; }
+}
+
+/* Personal time estimates are separate from the original-scale gauges. */
+.ov-forecast { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.ov-forecast h3 { margin:0 0 8px; font-size:13px; line-height:1.5; }
+.ov-forecast h3 > span { display:block; font-size:10px; font-weight:400; color:var(--ink-3); }
+.ov-forecast-result { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; margin:6px 0; font-size:12px; }
+.ov-forecast-result strong { font-size:16px; font-weight:600; }
+.ov-forecast.has-estimate .ov-forecast-result strong { color:var(--ink); }
+.ov-forecast-note { font-size:12px; line-height:1.6; color:var(--ink-3); margin:12px 0 0; }
+.ov-forecast-history { padding-left:18px; font-size:11px; color:var(--ink-3); line-height:1.8; }
+.ov-forecast .ov-basis p { font-size:11px; }
+.ov-selection .ov-forecast { font-size:11px; }
+
+/* Reference layout: state -> time -> target, with compact evidence beneath. */
+.ov-prediction-band { display:flex; align-items:center; gap:14px; padding:15px 17px; border-radius:12px; background:linear-gradient(90deg,var(--watch-soft),transparent); margin:10px 0 8px; }
+.ov-prediction-band > svg { flex:none; color:var(--ink-2); }
+.ov-prediction-target { display:block; color:var(--watch-ink); font-size:23px; line-height:1.45; font-weight:650; margin-top:3px; }
+.ov-energy-card .ov-prediction-band { background:linear-gradient(90deg,color-mix(in srgb,var(--ov-jade) 13%,transparent),transparent); }
+.ov-energy-card .ov-prediction-target { color:var(--good-ink,var(--ink)); }
+.ov-forecast .ov-forecast-result { margin:0; line-height:1.5; }
+.ov-time-track { stroke:var(--c-band); stroke-width:6; stroke-dasharray:none; opacity:1; }
+.ov-time-arc { stroke:#b4a0ed; stroke-width:6; stroke-linecap:round; }
+.ov-gauge:has(.ov-time-scale) { margin-bottom:20px; }
+.ov-gauge-label .ov-time-scale { position:absolute; top:100%; margin-top:5px; white-space:nowrap; }
+.ov-now { margin-top:10px; font-size:12px; }
+.ov-now > summary { min-height:32px; cursor:pointer; color:var(--ink-2); align-content:center; }
+.ov-now-form { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+.ov-now-form label { display:flex; gap:8px; align-items:center; }
+.ov-now-form input { width:64px; min-height:38px; border:1px solid var(--line-2); background:var(--surface); border-radius:8px; color:var(--ink); padding:8px; font:inherit; }
+.ov-now-form button { min-height:38px; border:1px solid var(--line-2); background:var(--surface-2); color:var(--ink); border-radius:8px; padding:8px 12px; font:inherit; cursor:pointer; }
+.ov-now-msg { flex-basis:100%; font-size:11px; color:var(--ink-3); line-height:1.6; margin:0; }
+.ov-body-label { white-space:pre-line; font-size:12px; max-width:165px; }
+.ov-selection .ov-prediction-target { font-size:16px; }
+.ov-selection .ov-prediction-band { padding:10px; gap:8px; }
+.ov-cardio { grid-template-columns:155px minmax(0,1fr); }
+@media (max-width:760px) {
+ .ov-prediction-band { padding:12px 10px; gap:8px; }
+ .ov-prediction-target { font-size:18px; }
+ .ov-cardio { grid-template-columns:100px minmax(0,1fr); }
+ .ov-time-arc,.ov-time-track { stroke-width:5px; }
+}
+
+/* Personal HRV model: device forecast stays distinct from self-rated recovery. */
+.hrv-model-card { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:16px 28px; padding:24px; margin-bottom:20px; border:1px solid var(--line); border-radius:20px; background:var(--surface); }
+.hm-heading { grid-column:1/-1; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.hm-heading .ov-tag { color:var(--accent); background:var(--accent-soft); }
+.hm-summary,.hm-chart { min-width:0; }
+.hm-readings { display:flex; align-items:center; gap:18px; }
+.hm-readings > div { min-width:0; flex:1; }
+.hm-readings span { font-size:11px; color:var(--ink-3); }
+.hm-readings b { display:block; font-size:34px; font-weight:650; letter-spacing:-.035em; }
+.hm-readings b small { font-size:13px; font-weight:400; letter-spacing:0; color:var(--ink-3); }
+.hm-next b { color:var(--accent); }
+.hm-readings .hm-arrow { font-size:24px; }
+.hm-next p { font-size:11px; color:var(--ink-2); margin:2px 0; }
+.hm-freshness { font-size:12px; line-height:1.65; color:var(--watch-ink); margin:12px 0 6px; }
+.hm-error { font-size:12px; font-weight:550; margin:12px 0 5px; }
+.hm-chart > p { margin:0 0 4px; font-size:11px; color:var(--ink-3); }
+.hm-chart svg { width:100%; display:block; overflow:visible; }
+.hm-chart text { font-size:11px; fill:var(--ink-3); }
+.hm-grid { stroke:var(--line); stroke-width:1; }
+.hm-line { fill:none; stroke-width:2; }
+.hm-line.hm-actual { stroke:var(--ink-2); opacity:.65; }
+.hm-line.hm-predicted { stroke:var(--accent); stroke-width:2.5; }
+.hm-line.hm-baseline { stroke:var(--ink-3); opacity:.45; stroke-dasharray:4 5; }
+.hm-legend { display:flex; flex-wrap:wrap; gap:14px; font-size:10px; color:var(--ink-3); }
+.hm-legend span::before { content:""; display:inline-block; width:17px; border-top:2px solid currentColor; margin-right:5px; vertical-align:middle; }
+.hm-legend .hm-predicted { color:var(--accent); }
+.hm-legend .hm-baseline::before { border-top-style:dashed; }
+.hm-detail,.hm-boundary { grid-column:1/-1; }
+.hm-detail { font-size:12px; color:var(--ink-2); border-top:1px solid var(--line); padding-top:10px; }
+.hm-detail summary { cursor:pointer; min-height:30px; align-content:center; }
+.hm-detail p { line-height:1.75; margin:8px 0; }
+.hm-boundary { font-size:10px; line-height:1.65; color:var(--ink-3); margin:0; }
+.hm-empty { gap:7px; }
+.hm-empty > p { grid-column:1/-1; }
+@media (max-width:760px) {
+  .hrv-model-card { grid-template-columns:1fr; padding:18px; gap:16px; }
+  .hm-readings { gap:12px; }
+  .hm-readings b { font-size:32px; }
+  .hm-chart text { font-size:20px; }
 }

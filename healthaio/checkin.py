@@ -1,10 +1,10 @@
 """The check-ins: in the morning on the Recovery page, how you feel (2, 5 or 8) and where you are sore; after a
 strength or hard workout, from the prompt on any page, what it trained (see schema.py).
 
-One check-in writes two tables: the feeling goes into that morning's row of self_report.csv (`feel`; energy, focus and
+One check-in writes two tables: the feeling goes into that morning's row of self_report.csv (`feel` and optional 0–5 `energy`; focus and
 the note on that row stay as they were), the soreness replaces that morning's rows in soreness.csv. Saving with no
 region tapped writes one soreness row, region `none`, so "checked, nothing sore" and "not checked" stay apart; saving
-without a feeling leaves `feel` as it was. Rows of other days are never touched, and rows that do not parse (a
+without a feeling or energy value preserves that field. Rows of other days are never touched, and rows that do not parse (a
 hand-edited file) are kept as written. `healthaio checkin` does the same from the command line (for a script or an
 assistant).
 
@@ -13,6 +13,7 @@ in your own words. Words in the note suggest regions (REGION_WORDS; the page sho
 untick any), and `healthaio trained` fills the regions from the note when none are given.
 """
 import csv
+import math
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -83,6 +84,14 @@ def check_feel(feel: Any) -> Optional[int]:
     return int(feel)
 
 
+def check_energy(energy: Any) -> Optional[float]:
+    if energy is None:
+        return None
+    if isinstance(energy, bool) or not isinstance(energy, (int, float)) or not math.isfinite(energy) or not 0 <= energy <= 5:
+        raise CheckinError("energy must be a number from 0 to 5")
+    return float(energy)
+
+
 def parse_day(text: Any, today: date) -> date:
     try:
         day = date.fromisoformat(str(text))
@@ -100,23 +109,28 @@ def _rows(path: Path) -> List[Dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
-def save(cfg, day: date, levels: Dict[str, int], feel: Optional[int] = None) -> Dict[str, Any]:
+def save(cfg, day: date, levels: Optional[Dict[str, int]], feel: Optional[int] = None, energy: Optional[float] = None) -> Dict[str, Any]:
     """Write this check-in, holding the write lock the importers hold."""
+    energy = check_energy(energy)
     stamp = day.isoformat()
     with state.write_lock(cfg):
-        sore = [r for r in _rows(Path(cfg.data_dir) / TABLES["soreness"].filename) if (r.get("date") or "").strip() != stamp]
-        new = [{"date": stamp, "region": region, "level": str(level)} for region, level in sorted(levels.items())]
-        sore += new or [{"date": stamp, "region": "none", "level": "0"}]
-        write_table(cfg.data_dir, "soreness", sorted(sore, key=lambda r: (r.get("date") or "", r.get("region") or "")))
-        if feel is not None:
+        if levels is not None:  # energy-only / feeling-only saves do not imply no soreness
+            sore = [r for r in _rows(Path(cfg.data_dir) / TABLES["soreness"].filename) if (r.get("date") or "").strip() != stamp]
+            new = [{"date": stamp, "region": region, "level": str(level)} for region, level in sorted(levels.items())]
+            sore += new or [{"date": stamp, "region": "none", "level": "0"}]
+            write_table(cfg.data_dir, "soreness", sorted(sore, key=lambda r: (r.get("date") or "", r.get("region") or "")))
+        if feel is not None or energy is not None:
             rows = _rows(Path(cfg.data_dir) / TABLES["self_report"].filename)
             mine = next((r for r in rows if (r.get("date") or "").strip() == stamp), None)
             if mine is None:
-                rows.append({"date": stamp, "feel": str(feel)})
-            else:
+                mine = {"date": stamp}
+                rows.append(mine)
+            if feel is not None:
                 mine["feel"] = str(feel)
+            if energy is not None:
+                mine["energy"] = str(energy)
             write_table(cfg.data_dir, "self_report", sorted(rows, key=lambda r: r.get("date") or ""))
-    return {"ok": True, "date": stamp, "levels": levels, "feel": feel}
+    return {"ok": True, "date": stamp, "levels": levels, "feel": feel, "energy": energy}
 
 
 def check_trained(regions: Any, note: Any) -> Tuple[List[str], str]:
@@ -169,7 +183,8 @@ def from_browser(cfg, request: Any, now: Optional[datetime] = None) -> Dict[str,
         raise CheckinError("expected a JSON object")
     today = (now or datetime.now()).date()
     day = parse_day(request.get("date"), today)
-    return save(cfg, day, check(request.get("levels", {})), check_feel(request.get("feel")))
+    levels = None if "levels" in request and request["levels"] is None else check(request.get("levels", {}))
+    return save(cfg, day, levels, check_feel(request.get("feel")), check_energy(request.get("energy")))
 
 
 def run(args: Any, cfg) -> int:
@@ -184,13 +199,14 @@ def run(args: Any, cfg) -> int:
                 levels[region] = int(level)
             except ValueError:
                 raise CheckinError(f"{pair!r}: expected REGION=LEVEL, e.g. left_calf=2") from None
-        result = save(cfg, day, check(levels), check_feel(args.feel))
+        result = save(cfg, day, check(levels), check_feel(args.feel), check_energy(getattr(args, "energy", None)))
     except CheckinError as error:
         print(f"healthaio checkin: {error}")
         return 2
     sore = ", ".join(f"{r} {lv}" for r, lv in result["levels"].items()) or "nothing sore"
     feel = f", feeling {result['feel']}" if result["feel"] is not None else ""
-    print(f"{result['date']}: {sore}{feel}")
+    energy = f", energy {result['energy']}/5" if result["energy"] is not None else ""
+    print(f"{result['date']}: {sore}{feel}{energy}")
     return 0
 
 

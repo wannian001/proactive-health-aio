@@ -108,6 +108,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p = sub.add_parser("checkin", help="the morning check-in: how you feel and where you are sore (also on the Recovery page)")
     p.add_argument("levels", nargs="*", metavar="REGION=LEVEL", help="1 a little, 2 clearly, 3 very; none given = nothing sore")
     p.add_argument("--feel", type=int, choices=[2, 5, 8], help="2 not recovered, 5 so-so, 8 recovered")
+    p.add_argument("--energy", type=float, help="optional body energy, 0 drained to 5 full; separate from --feel")
     p.add_argument("--date", help="the morning, YYYY-MM-DD (default today)")
     p = sub.add_parser("trained", help="what a workout trained: regions of the body figure and a note (also the popup after a workout)")
     p.add_argument("regions", nargs="*", metavar="REGION", help="head, torso, pelvis, left_upper_arm, ...; none given = from the note's words")

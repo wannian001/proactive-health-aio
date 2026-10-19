@@ -160,10 +160,13 @@ function sorenessHtml(p) {
         <p class="small muted" style="margin:0 0 var(--s-3)">${S.latest && !S.today ? esc(t("sore.latest_was", { list: Object.keys(S.levels).length ? regionsText(S.levels) : t("sore.none_short") })) : ""}</p>
         <div class="feel-row" role="group" aria-label="${esc(t("feel.question"))}"><span class="small">${t("feel.question")}</span>
           ${[2, 5, 8].map((v) => `<button type="button" class="goal-btn feel-btn" data-feel="${v}" aria-pressed="${p.feel_today === v}">${t(`feel.${v}`)}</button>`).join("")}</div>
+        <div class="feel-row" role="group" aria-label="${esc(rv("energyQuestion"))}"><span class="small">${rv("energyQuestion")}</span>
+          ${[0, 1, 2, 3, 4, 5].map(v => `<button type="button" class="goal-btn energy-btn" data-energy="${v}" aria-pressed="${p.self?.date === p.day && p.self.energy === v}">${v}</button>`).join("")}</div>
+        <p class="xs muted">${rv("energyHint")}</p>
         ${asked}
-        <p class="small" style="margin:var(--s-3) 0 var(--s-2)">${t(askedRegions.length ? "sore.how_to_rest" : "sore.how_to")}</p>
+        <p class="small" style="margin:var(--s-3) 0 var(--s-2)">${askedRegions.length ? t("sore.how_to_rest") : rv("soreOptionalHint")}</p>
         <div class="goal-act"><button type="button" class="goal-btn primary" id="sore-save"${isStatic ? " disabled" : ""}>${t("sore.save")}</button>
-          <button type="button" class="goal-btn" id="sore-clear">${t("sore.clear")}</button></div>
+          <button type="button" class="goal-btn" id="sore-clear">${rv("confirmNoSoreness")}</button></div>
         <p class="xs sore-msg" role="status">${isStatic ? t("sore.static") : ""}</p>
         <h3 class="section-title" style="margin-top:var(--s-4)">${t("sore.last_days", { n: S.days })}</h3>
         <div class="sore-rows">${rows}</div>
@@ -206,7 +209,9 @@ export default {
     const levels = { ...(S.today ? S.levels : {}) };
     const svg = root.querySelector(".sore-layout .fig");
     let overview;
+    let sorenessChanged = S.today;
     const set = (r, lv) => {
+      sorenessChanged = true;
       if (lv) levels[r] = lv; else delete levels[r];
       const g = svg.querySelector(`.fig-region[data-region="${r}"]`);
       g.style.fill = fill(lv);
@@ -229,18 +234,23 @@ export default {
       };
     });
     let feel = p.feel_today ?? null;
+    let energy = p.self?.date === p.day ? p.self.energy : null;
+    root.querySelectorAll(".energy-btn").forEach(b => { b.onclick = () => {
+      energy = Number(b.dataset.energy);
+      root.querySelectorAll(".energy-btn").forEach(x => x.setAttribute("aria-pressed", String(Number(x.dataset.energy) === energy)));
+    }; });
     root.querySelectorAll(".feel-btn").forEach((b) => {
       b.onclick = () => {
         feel = feel === Number(b.dataset.feel) ? null : Number(b.dataset.feel);
         root.querySelectorAll(".feel-btn").forEach((x) => x.setAttribute("aria-pressed", String(Number(x.dataset.feel) === feel)));
       };
     });
-    root.querySelector("#sore-clear").onclick = () => { Object.keys(levels).forEach((r) => set(r, 0)); overview?.setLevels(levels); };
+    root.querySelector("#sore-clear").onclick = () => { sorenessChanged = true; Object.keys(levels).forEach((r) => set(r, 0)); overview?.setLevels(levels); };
     const msg = root.querySelector(".sore-msg");
     root.querySelector("#sore-save").onclick = async () => {
       if (isStatic) return;
       try {
-        await post("checkin", { date: p.today, levels, feel });
+        await post("checkin", { date: p.today, levels: sorenessChanged ? levels : null, feel, energy });
         window.dispatchEvent(new HashChangeEvent("hashchange"));
       } catch (error) {
         msg.textContent = t("sore.err", { e: error.message });

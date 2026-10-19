@@ -28,7 +28,8 @@ class RecoveryOverview(unittest.TestCase):
         self.assertIsNone(p["self"])
         self.assertIsNone(p["cardio"]["latest"])
         self.assertFalse(p["soreness"]["today"])
-        self.assertNotIn("forecast", p)
+        self.assertEqual(p["forecast"]["energy"]["status"], "missing_current")
+        self.assertIsNone(p["forecast"]["energy"]["range_days"])
 
     def test_zero_energy_retains_original_scale_and_record_date(self):
         write_table(self.cfg.data_dir, "self_report", [

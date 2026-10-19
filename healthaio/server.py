@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, Optional
 from urllib.parse import parse_qs, urlsplit
 
 from . import __version__, capture, goal_log, iphone, kit, phone, update
-from . import checkin, restore_log
+from . import checkin, restore_log, recovery_log
 from .config import Config
 from .context import Context
 from .modules import PAGES
@@ -226,6 +226,8 @@ def make_handler(cfg: Config, now: Callable[[], Optional[datetime]] = lambda: No
                 return self._json(409, {"started": False, "error": "an update is already running"})
             if path == "/api/goals":
                 return self._goals()
+            if path == "/api/recovery-checkin":
+                return self._checkin(recovery_log.from_browser)
             if path == "/api/checkin":
                 return self._checkin(checkin.from_browser)
             if path == "/api/trained":

@@ -1,4 +1,5 @@
-// Guide (#guide): how to use Proactive Health AIO, from the demo to your own data to a normal day with it.
+// Guide: how to use Proactive Health AIO, from the demo to your own data to a normal day with it. It is drawn as the
+// last section of the Overview (#project); #guide still renders it alone, for old links and the tests.
 // Numbered steps in the order you meet them, in one card, each opening on a click; commands are the ones in the README's Quick start
 // and companion-app sections. The server only
 // names the page (modules/docs.py).
@@ -105,16 +106,21 @@ const GUIDE = {
 
 const code = (key) => `<pre class="doc-code"><code>${CODE[key].map(esc).join("\n")}</code></pre>`;
 
+// the steps in one card: every step's title in view, its text one click away; the first step opens with `first`
+export function guideSteps(first = true) {
+  const c = GUIDE[getLang()] || GUIDE.en;
+  const steps = c.steps.map((s, i) => `<li><details${first && i === 0 ? " open" : ""}><summary><span class="doc-n">${i + 1}</span>${s.h}</summary>
+      ${s.body.map((p) => `<p>${p}</p>`).join("")}${s.code ? code(s.code) : ""}${s.after ? `<p>${s.after}</p>${code(s.code2)}` : ""}</details></li>`).join("");
+  return `<section class="card" id="guide"><h2>${c.title}</h2><ol class="doc-folds doc-guide-steps">${steps}</ol></section>`;
+}
+
 export default {
   render() {
     const c = GUIDE[getLang()] || GUIDE.en;
-    // one card: every step's title in view, its text one click away; the first step is open
-    const steps = c.steps.map((s, i) => `<li><details${i === 0 ? " open" : ""}><summary><span class="doc-n">${i + 1}</span>${s.h}</summary>
-      ${s.body.map((p) => `<p>${p}</p>`).join("")}${s.code ? code(s.code) : ""}${s.after ? `<p>${s.after}</p>${code(s.code2)}` : ""}</details></li>`).join("");
     return `<div class="head"><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
       <div class="doc">
         <div class="doc-note"><p>${c.note}</p><button type="button" class="doc-link" id="doc-lang">${t("doc.other_lang")}</button></div>
-        <section class="card"><ol class="doc-folds doc-guide-steps">${steps}</ol></section>
+        ${guideSteps()}
         <p class="doc-try"><a href="${esc(t("doc.history_url"))}" target="_blank" rel="noopener">${c.history} ↗</a></p>
       </div>`;
   },

@@ -260,8 +260,8 @@ class DrainWords(unittest.TestCase):
 
     def test_todays_card_opens_the_window_it_shows(self):
         html = self.render("en", "today", "2026-10-05")
-        self.assertIn('href="#drain/2026-10-04"', html)
-        self.assertIn('href="#drain"', self.render("en", "today", None))
+        self.assertIn('href="#recovery/2026-10-04/drain"', html)  # Wear and tear is the end of Recovery now
+        self.assertIn('href="#recovery/drain"', self.render("en", "today", None))
         self.assertIn('href="#today">Next day', self.render("en", "today", "2026-10-11").replace(" ›", ""))
 
     def test_english_lists_read_as_sentences(self):
@@ -275,16 +275,19 @@ class DrainWords(unittest.TestCase):
 
 class Menu(unittest.TestCase):
     def test_menu_follows_the_health_loop(self):
-        # one axis: today, what the body shows (recovery, sleep, wear and tear, weight & fitness), what you do every day
-        # (exercise, food, stimulation), and what you planned and whether it happened and helped (the week, body and
-        # mind load, goals, follow-up with "tomorrow will be better"); where the numbers come from sits under the menu
+        # one axis: today, what the body shows (recovery with wear and tear at its end, sleep, weight & fitness), what you
+        # do every day (exercise, food, stimulation, rest), and what you planned and whether it happened and helped
+        # (schedule & load, goals, follow-up with "tomorrow will be better"); where the numbers come from sits under the menu
         app = (Path(__file__).resolve().parents[1] / "healthaio" / "web" / "js" / "app.js").read_text(encoding="utf-8")
         self.assertIn('const NAV = ["today", "body", "life", "plans"];', app)  # Weekly review went into Follow-up, Data under the menu,
         # Schedule and Actions & goals are one item (a plan, and whether it held)
         self.assertIn('review: "followup"', app)  # an old #review link opens Follow-up, where "tomorrow will be better" is
-        self.assertIn('body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["drain", "nav.drain"], ["body", "nav.weight_tab"]]', app)
+        self.assertIn('body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["body", "nav.weight_tab"]]', app)
         self.assertIn('life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"], ["restore", "nav.restore"]]', app)
-        self.assertIn('plans: [["week", "nav.schedule_week"], ["load", "nav.load_tab"], ["goals", "nav.goals"], ["followup", "nav.followup"]]', app)
+        self.assertIn('plans: [["week", "nav.schedule_week"], ["goals", "nav.goals"], ["followup", "nav.followup"]]', app)
+        # pages folded into another one keep their old links: Wear and tear into Recovery, Body & mind load into Schedule & load
+        self.assertIn('drain: (d) => (d ? `recovery/${d}/drain` : "recovery/drain")', app)
+        self.assertIn('load: (d) => (d ? `week/${d}` : "week")', app)
         i18n = (Path(__file__).resolve().parents[1] / "healthaio" / "web" / "js" / "i18n.js").read_text(encoding="utf-8")
         for key in ("nav.body", "nav.life", "nav.plans", "nav.short.plans", "nav.followup"):
             self.assertEqual(i18n.count(f'"{key}"'), 2, key)  # English and Chinese

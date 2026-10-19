@@ -1,4 +1,5 @@
-"""Week: seven days of calendar, deadlines and training, plus how heavy the coming weeks are."""
+"""Week: seven days of calendar, deadlines and training, plus how heavy the weeks around it are for body and mind
+(the Body & mind load payload, modules/load.py, which used to be a page of its own)."""
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -19,6 +20,7 @@ def _deadline(d: Dict[str, Any], today: date) -> Dict[str, Any]:
 
 
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
+    from . import load as load_page  # imported here: load takes monday() from this module
     picked = date.fromisoformat(day) if day else ctx.today
     start = monday(picked)
     today = ctx.today
@@ -60,4 +62,4 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     overdue = sorted((_deadline(x, today) for x in open_items if x["due"].date() < today), key=lambda x: x["due"])
     return {"page": "week", "week_start": iso(start), "week_end": iso(start + timedelta(days=6)), "today": iso(today),
             "now": iso(ctx.now), "is_current": start == monday(today), "days": days, "load": load,
-            "upcoming": upcoming, "later": later, "overdue": overdue}
+            "upcoming": upcoming, "later": later, "overdue": overdue, "body_mind": load_page.build(ctx, day)}

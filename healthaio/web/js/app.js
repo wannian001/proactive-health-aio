@@ -28,19 +28,22 @@ import week from "./pages/week.js";
 // the design kit gallery (#kit) is a page but not a menu item: the footer of every page and the Data page link to it
 const PAGES = { today, week, body, recovery, restore, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };
 // the menu is one axis, the loop of managing your health, one question per item: how am I today and what do I
-// change (Today); what is my body showing, the outcomes (Body signals: recovery, sleep, drain, weight); what do I do every day,
-// the causes I control (Daily life: exercise, food, stimulation); and what have I planned and did it happen (Plans &
-// follow-up: the week on the calendar, how heavy the weeks are for body and mind, the goals, and whether yesterday's
-// advice happened and helped, "tomorrow will be better"). Schedule and Actions & goals were one question asked
-// twice (a plan, and whether it held), so they are one item. Weekly review was folded into Follow-up; where the
-// numbers come from (Data sources) sits under the menu with the reading pages, since it is not a step of the loop.
+// change (Today); what is my body showing, the outcomes (Body signals: recovery with its long view, sleep, weight);
+// what do I do every day, the causes I control (Daily life: exercise, food, stimulation, rest & rewards); and what
+// have I planned and did it happen (Plans & follow-up: the schedule and how heavy the weeks are for body and mind, the
+// goals, and whether yesterday's advice happened and what tends to make tomorrow better). Pages that answered the
+// same question twice were folded into one (see MOVED). Where the numbers come from (Data sources) sits under the
+// menu with the reading pages, since it is not a step of the loop.
 const NAV = ["today", "body", "life", "plans"];
 // a menu item that holds several pages shows a small switch above the page title and opens on its first page
 const GROUPS = {
-  body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["drain", "nav.drain"], ["body", "nav.weight_tab"]],
+  body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["body", "nav.weight_tab"]],
   life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"], ["restore", "nav.restore"]],
-  plans: [["week", "nav.schedule_week"], ["load", "nav.load_tab"], ["goals", "nav.goals"], ["followup", "nav.followup"]],
+  plans: [["week", "nav.schedule_week"], ["goals", "nav.goals"], ["followup", "nav.followup"]],
 };
+// pages that became a part of another one: Wear and tear is the end of Recovery, Body & mind load is part of
+// Schedule & load, the Guide is the end of the Overview. An old link lands on the part (a date stays a date).
+const MOVED = { drain: (d) => (d ? `recovery/${d}/drain` : "recovery/drain"), load: (d) => (d ? `week/${d}` : "week"), guide: () => "project/guide" };
 const groupOf = (page) => Object.keys(GROUPS).find((g) => GROUPS[g].some(([p]) => p === page)) || page;
 // a page inside a group is titled by its own tab (Weight, Sleep), not by the group
 const titleKey = (page) => (GROUPS[groupOf(page)] || []).find(([p]) => p === page)?.[1] || `nav.${page}`;
@@ -51,8 +54,8 @@ const NAV_ICON = { today: "sun", body: "heart", life: "walk", plans: "calendar" 
 // to use the app, and how the personal system it comes from changed over a year. History is on the author's own site
 // (it quotes that personal system), so it is a link out, in a new tab. On a phone they are small links in the top
 // row, so the tab bar keeps the four items of the loop.
-const DOCS = ["data", "project", "guide", "history"];
-const DOC_ICON = { data: "database", project: "info", guide: "communication", history: "clock" };
+const DOCS = ["data", "project", "history"];
+const DOC_ICON = { data: "database", project: "info", history: "clock" };
 const OUTSIDE = { history: "doc.history_url" };  // the i18n key of its address (one page per language)
 const docAttrs = (p) => (OUTSIDE[p] ? `href="${esc(t(OUTSIDE[p]))}" target="_blank" rel="noopener"` : `href="#${p}"`);
 const docName = (p) => `${t(`nav.${p}`)}${OUTSIDE[p] ? " ↗" : ""}`;
@@ -159,10 +162,13 @@ function header(active) {
 }
 
 async function route(event) {
-  const [raw, rest] = (location.hash.replace(/^#/, "") || "today").split("/");
-  // #recovery/now opens Recovery at the "How you are right now" card; any other second part is a date
-  const focus = rest === "now" ? "now" : null, param = focus ? undefined : rest;
+  // #page, #page/date, #page/part or #page/date/part: a part is a place on the page (#recovery/now, the "How you are
+  // right now" card; #recovery/drain, Wear and tear), scrolled to once the page is drawn
+  const [raw, ...more] = (location.hash.replace(/^#/, "") || "today").split("/");
+  const isDate = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x);
+  const param = more.find(isDate), focus = more.find((x) => x && !isDate(x));
   if (OUTSIDE[raw]) { location.replace(t(OUTSIDE[raw])); return; }  // an old #history link: the page moved to the author's site
+  if (MOVED[raw]) { location.replace(`#${MOVED[raw](param)}`); return; }
   const name = ALIAS[raw] || raw;
   const page = PAGES[name] ? name : "today";
   header(page);

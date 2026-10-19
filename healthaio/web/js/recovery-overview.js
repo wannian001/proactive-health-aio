@@ -1,7 +1,5 @@
-import { esc, draw, spark } from "./charts.js";
-import { day, num, measure, t, toDate, wtype } from "./i18n.js";
-import { icon } from "./icons.js";
-import { rv } from "./i18n.js";
+import { esc } from "./charts.js";
+import { day, num, rv, t, toDate, wtype } from "./i18n.js";
 import { mountBody } from "./recovery-model.js";
 import { forecastHtml, forecastText, forecastTarget } from "./recovery-forecast.js";
 
@@ -61,28 +59,6 @@ function energyCard(p) {
       ${forecastHtml(p, "energy")}<a class="ov-text-link" href="#recovery/now">${t("now.link")} ↓</a></div>`;
 }
 
-function cardioCard(p) {
-  const C = p.cardio, L = C?.latest;
-  return `<section class="ov-metric ov-cardio"><div class="ov-mini-trend"><div class="ov-spark"></div><span>${t("cardio.chart")}</span></div>
-    <div class="ov-card-copy"><div class="ov-card-title"><h2>${t("cardio.short")}</h2><span class="ov-tag">${rv("longTerm")}</span></div>
-      ${L ? `<div class="ov-cardio-read"><strong>${num(L.level, 1)}</strong><span>mL/kg/min</span><span class="ov-cardio-change">${L.state ? t(`cardio.state.${L.state}`, { v: num(Math.abs(L.change), 1) }) : t("cardio.no_then")}</span></div>
-      <p class="ov-secondary">${t("cardio.level_of", { n: L.n, d: C.rule.level_days })} · ${esc(rv("latest", { date: day(L.date, { weekday: false }) }))}</p>
-      ${L.stale_days > 21 ? `<p class="ov-secondary">${t("cardio.stale", { n: L.stale_days })}</p>` : ""}` : `<p class="ov-secondary">${rv("noCardio")}</p>`}
-      <a class="ov-text-link" href="#body">${rv("trend")} ↗</a></div></section>`;
-}
-
-function related(p) {
-  const rows = p.recovery.metrics.map(m => `<a class="ov-record" href="${m.key === "sleep" ? "#sleep" : "#data"}">
-    <span class="ov-record-icon">${icon(m.key === "sleep" ? "sleep" : "heart", 22)}</span><div><span>${t(`metric.${m.key}`)}</span>
-      <b>${measure(m.value, m.unit)}</b><small>${m.partial ? t("state.partial") : t(`state.${m.state || "none"}`)}</small>
-      <small>${m.date ? esc(day(m.date)) : ""}</small>
-      <small>${m.band ? t("band", { low: measure(m.band.q1, m.unit), high: measure(m.band.q3, m.unit) }) : ""}</small></div></a>`);
-  rows.push(`<a class="ov-record" href="#load"><span class="ov-record-icon">${icon("exercise", 22)}</span><div><span>${t("rec.load_title")}</span>
-    <b>${p.load.state === "none" ? rv("noTrainingRecords") : t(`rec.load.${p.load.state}`)}</b><small>${rv("record")} ↗</small></div></a>`);
-  return `<section class="ov-records"><div class="ov-records-title"><h2>${rv("records")}</h2>${p.recovery.days_behind > 1 ? `<span>${esc(rv("dataThrough", { date: day(p.recovery.as_of, { weekday: false }) }))}</span>` : ""}</div>
-    <div class="ov-record-grid">${rows.join("")}</div></section>`;
-}
-
 export function overviewHtml(p) {
   return `<section class="rec-overview" aria-label="${rv("title")}"><div class="ov-layout">
     <section class="ov-body-panel"><div class="ov-body-head"><h2>${rv("muscles")}</h2><div class="ov-view-switch" role="group" aria-label="${rv("muscles")}">
@@ -94,8 +70,8 @@ export function overviewHtml(p) {
       <div class="ov-selection" aria-live="polite"><p>${rv("selectPrompt")}</p></div>
       <details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><a href="models/recovery/ILLUSTRATION.md" target="_blank" rel="noopener">${rv("modelCredit")} ↗</a></details>
     </section>
-    <div class="ov-states"><section class="ov-metric ov-sore-card">${soreCard(p)}</section><section class="ov-metric ov-energy-card">${energyCard(p)}</section>${cardioCard(p)}</div>
-    </div>${related(p)}</section>`;
+    <div class="ov-states"><section class="ov-metric ov-sore-card">${soreCard(p)}</section><section class="ov-metric ov-energy-card">${energyCard(p)}</section></div>
+    </div></section>`;
 }
 
 export function mountOverview(root, p, { onLevel, openEditor }) {
@@ -142,10 +118,6 @@ export function mountOverview(root, p, { onLevel, openEditor }) {
   }; });
   wrap.querySelectorAll("[data-ov-turn]").forEach(b => { b.onclick = () => model?.rotate(Number(b.dataset.ovTurn)); });
   wrap.querySelector(".ov-front").onclick = () => model?.reset();
-  const C = p.cardio;
-  if (C?.line.length) draw(wrap.querySelector(".ov-spark"), w => spark(C.line, null, { width: w, height: 78, unit: "mL/kg/min" })
-    .replace(/aria-label="[^"]*"/, `aria-label="${esc(`${t("cardio.short")} · ${t("cardio.chart")}`)}"`));
-  else wrap.querySelector(".ov-spark").textContent = rv("unknown");
   mountBody(wrap.querySelector(".ov-body-stage"), { regions: p.regions, levels, known: p.soreness.today, trained, onSelect: select,
     onUnsupported() { selected = ""; wrap.querySelector("#ov-region").value = ""; repaint(); wrap.querySelector(".ov-selection").innerHTML = `<p>${rv("untracked")}</p>`; }
   }).then(result => { model = result; repaint(); });

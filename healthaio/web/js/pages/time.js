@@ -3,11 +3,11 @@
 // melatonin) cannot be measured by a phone or a watch, so no number on the page claims to be one; it shows what goes
 // in (five Screen Time signals) and what the body does next (sleep, HRV, resting heart rate), and says plainly that
 // the second is an association. The numbers and rules are in modules/time.py. One answer card, then the long view,
-// then the body, then the detail in tabs (a typical day, devices at once, where it came from).
+// then the detail in tabs (a typical day, devices at once, where it came from); how the body answered is on
+// Follow-up, under "Tomorrow will be better".
 import { bullet, draw, esc, lanes, timeChart } from "../charts.js";
 import { day, device, dur, getLang, num, t } from "../i18n.js";
 import { icon, STATE_ICON } from "../icons.js";
-import { compareHtml, mountCompare } from "./effects.js";
 import { mountTabs, tabs } from "./tabs.js";
 
 const SCREEN_PARTS = [["fun", "var(--c-fun)"], ["focus", "var(--c-focus)"], ["communication", "var(--c-comms)"], ["other", "var(--c-other)"]];
@@ -108,31 +108,6 @@ function trendHtml(p) {
     <p class="xs muted" style="margin:10px 0 0">${esc(t("trend.key"))}</p></section>`;
 }
 
-// how the body answered: the night and next morning after stimulating days, against the others (an association)
-function outcomeText(r, R) {
-  const unit = R.units[r.outcome];
-  const show = (v) => (unit === "%" ? `${num(Math.abs(v), 1)}%` : unit === "bpm" ? t("stim.bpm", { v: num(Math.abs(v), 1) }) : dur(Math.abs(v)));
-  const range = (v) => (unit === "%" ? `${v < 0 ? "−" : ""}${num(Math.abs(v), 1)}%` : unit === "bpm" ? `${v < 0 ? "−" : ""}${num(Math.abs(v), 1)}` : `${v < 0 ? "−" : ""}${dur(Math.abs(v))}`);
-  const dir = t(`stim.out.${r.outcome}.${r.diff >= 0 ? "up" : "down"}`, { v: show(r.diff) });
-  return t("stim.out_line", { dir, low: range(r.low), high: range(r.high) });
-}
-
-function responseHtml(p) {
-  const R = p.response;
-  if (!R) return "";
-  const groups = ["fun_high", "late_fun"].map((e) => {
-    const rows = R.rows.filter((r) => r.exposure === e);
-    const head = e === "fun_high"
-      ? (R.median_fun != null ? t("stim.exp.fun_high", { v: dur(R.median_fun) }) : t("stim.exp.fun_high_none"))
-      : t("stim.exp.late_fun", { v: dur(R.calm_min) });
-    const items = compareHtml(rows, { name: (r) => t(`stim.out.${r.outcome}`), better: (r) => R.better[r.outcome],
-      text: (r) => (r.status === "ok" ? outcomeText(r, R) : t("stim.too_few_line", { a: r.yes_days, b: r.no_days, n: R.method.min_group_days })) });
-    return `<div class="stim-group"><h3 class="section-title">${esc(head)}</h3><div data-exposure="${e}">${items}</div></div>`;
-  }).join("");
-  return `<section class="card span-12"><h2>${t("stim.body_title")}<span class="aside">${t("stim.body_sub", { n: R.days })}</span></h2>
-    ${groups}<p class="xs muted" style="margin:10px 0 0">${phrases(t("stim.body_note"))}</p></section>`;
-}
-
 // devices at once: device time, screens at once and the longest stretch on one thing, then device time by hour
 function stackHtml(p) {
   const K = p.stack;
@@ -179,7 +154,6 @@ export default {
       <div class="grid">
         ${heroHtml(p)}
         ${trendHtml(p)}
-        ${responseHtml(p)}
         <section class="card span-12"><h2>${t("time.detail")}</h2>
           ${tabs("time", [
             p.hours.now ? { key: "hours", label: t("stim.tab.hours"), html: `<p class="xs muted tab-note">${phrases(t("stim.hours_note"))}</p><div id="fun-hours" class="chart"></div>` } : null,
@@ -187,12 +161,10 @@ export default {
             { key: "apps", label: t("stim.tab.apps"), html: appsHtml(p) },
           ])}
           <details class="how"><summary>${t("ui.how")}</summary><p>${esc(t("stim.rule", { n: p.baseline_days, min: p.baseline_min }))}</p>
-            <p>${esc(t("stim.rule_body", { days: p.response.days || 90, n: p.response.method.min_group_days, calm: p.response.calm_min }))}</p>
             <p>${esc(t("time.rule_stack"))}</p>${p.trend ? `<p>${esc(t("trend.rule", { n: p.baseline_days, min: p.baseline_min, level: p.trend.level_days, lmin: p.trend.level_min, days: p.trend.days }))}</p>` : ""}</details></section>
       </div>`;
   },
   mount(root, p) {
-    root.querySelectorAll("[data-exposure]").forEach((box) => mountCompare(box, p.response.rows.filter((r) => r.exposure === box.dataset.exposure)));
     if (p.empty || !p.span.metrics || !p.span.metrics.before_sleep) return;
     mountTabs(root);
     const M = p.span.metrics;

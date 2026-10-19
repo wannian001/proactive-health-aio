@@ -27,7 +27,7 @@ class Registry(unittest.TestCase):
 class Menu(unittest.TestCase):
     def test_they_sit_under_the_menu_not_in_it(self):
         listed = re.findall(r'"(\w+)"', re.search(r"const DOCS\s*=\s*\[([^\]]*)\]", APP).group(1))
-        self.assertEqual(listed, ["data", "project", "guide", "history"])  # where the numbers come from, then the reading pages
+        self.assertEqual(listed, ["data", "project", "history"])  # where the numbers come from, then the reading pages (the guide is the end of the overview)
         nav = re.search(r"const NAV\s*=\s*\[([^\]]*)\]", APP).group(1)
         for name in listed:
             self.assertNotIn(f'"{name}"', nav)  # the tab bar keeps the four items of the health loop
@@ -82,10 +82,11 @@ class Words(unittest.TestCase):
         for lang, title in (("en", "Overview"), ("zh", "项目说明")):
             html = self.render(lang, "project")["html"]
             self.assertIn(f"<h1>{title}</h1>", html)
+            self.assertIn('id="guide"', html)  # #guide moved here: #project/guide opens the overview at it
             shapes.append([len(re.findall(pattern, html)) for pattern in
                            (r'class="card doc-card"', r"<li><b>[^<]*</b><span>", r"<li><details", r"<tr>", r'class="chip"')])
         self.assertEqual(shapes[0], shapes[1])
-        self.assertEqual(shapes[0][:3], [3, 5, 5])  # three cards, the five steps of the loop, five folds
+        self.assertEqual(shapes[0][:3], [3, 5, 13])  # three cards, the five steps of the loop, five folds, then the guide's eight steps
 
     def test_no_personal_data_on_the_pages(self):
         text = "".join((WEB / "js" / f).read_text(encoding="utf-8") for f in ("pages/guide.js", "pages/project.js"))

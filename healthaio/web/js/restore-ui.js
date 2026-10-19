@@ -85,10 +85,22 @@ function feedbackHtml(s, open) {
       <p class="xs muted">${t("rr.feedback_hint")}</p></form></details>`;
 }
 
-export function historyHtml(p, { limit = 5 } = {}) {
+// what each activity has done for you, one row each (modules/restore.py tried): times, better, glad
+export function triedHtml(p) {
+  if (!p) return "";
+  const rows = p.tried || [];
+  const share = (k, b) => (b.answered ? `<span class="num">${b[k]}</span><span class="xs muted">/${b.answered}</span>` : `<span class="xs muted">—</span>`);
+  const body = !rows.length ? `<div class="rr-empty">${icon("clock", 26)}<p>${t("rr.history_empty")}</p></div>`
+    : `<div class="table-wrap"><table class="rr-tried"><thead><tr><th>${t("rr.tried.activity")}</th><th>${t("rr.tried.times")}</th><th>${t("rr.tried.better")}</th><th>${t("rr.tried.glad")}</th></tr></thead>
+      <tbody>${rows.map((b) => `<tr><td><span class="rr-glyph">${activityIcon(b.activity, 18)}</span>${t(`rr.activity.${b.activity}`)}</td><td class="num">${b.times}</td><td>${share("better", b)}</td><td>${share("glad", b)}</td></tr>`).join("")}</tbody></table></div>`;
+  return `<section class="rr-history"><h2>${t("rr.history")}</h2><p class="small muted">${t("rr.tried_hint")}</p>${body}
+    ${p.sessions.some((s) => s.status !== "active") ? `<details class="how rr-tried-detail"><summary>${t("rr.tried_detail")}</summary>${historyHtml(p, { limit: 30, head: false })}</details>` : ""}</section>`;
+}
+
+export function historyHtml(p, { limit = 5, head = true } = {}) {
   if (!p) return "";
   const sessions = p.sessions.filter((s) => s.status !== "active").slice(0, limit);
-  return `<section class="rr-history"><h2>${t("rr.history")}</h2><p class="small muted">${t("rr.history_hint")}</p>
+  return `<section class="rr-history">${head ? `<h2>${t("rr.history")}</h2><p class="small muted">${t("rr.history_hint")}</p>` : `<p class="small muted">${t("rr.history_hint")}</p>`}
     ${!sessions.length ? `<div class="rr-empty">${icon("clock", 26)}<p>${t("rr.history_empty")}</p></div>` : sessions.map((s, i) => {
       const f = s.feedback, status = t(s.status === "cancelled" ? "rr.cancelled" : "rr.finished");
       return `<article class="rr-session" data-rr-session="${esc(s.id)}"><div class="rr-session-head"><span class="rr-glyph">${activityIcon(s.activity, 20)}</span><div><h3>${t(`rr.activity.${s.activity}`)}</h3><span class="xs muted">${t("rr.started", at(s.started_at))}</span></div><span class="chip">${status}</span></div>

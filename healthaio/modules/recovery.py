@@ -318,7 +318,7 @@ def after_training(ctx: Context, end: date, days: Dict[date, Dict[str, Any]],
 
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     from .. import hrv_model
-    from . import body, restore, recovery_forecast, timed_recovery
+    from . import body, drain, restore, recovery_forecast, timed_recovery
     end = min(date.fromisoformat(day) if day else ctx.today, ctx.today)
     days = daily_load(ctx, end)
     annotate(days, workout_notes(ctx))
@@ -332,6 +332,7 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
             "self": today_page.self_report(ctx, end),
             "cardio": body.cardio(ctx, end),
             "hrv_prediction": hrv_model.build(ctx, end),
+            "drain": drain.build(ctx, day),  # the long view at the end of the page (Wear and tear)
             "forecast": forecast, "current_ratings": ratings,
             "load": load_summary(days, end),
             "soreness": {**soreness(ctx, end, log, trained), "asked": asked(days, end)},

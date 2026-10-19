@@ -1,9 +1,10 @@
 // "What has tended to help the next day": one row per condition, the next day's HRV, resting heart rate or self-rated
-// energy on days after doing it against days after not, with its 95% interval. Shared by the Review page (the whole
-// list) and the Today page (one summary line that links to it). compareHtml draws the same picture for the
-// "how the body answered" cards on Recovery and Stimulation.
+// energy on days after doing it against days after not, with its 95% interval. Shared by Follow-up's "Tomorrow will
+// be better" (the whole list) and the Today page (one summary line that links to it). compareHtml draws the same
+// picture for the two other "how the body answered" analyses that card also holds: after hard training days
+// (modules/recovery.py response) and after stimulating screen days (modules/time.py response).
 import { draw, esc, interval } from "../charts.js";
-import { num, signed, t } from "../i18n.js";
+import { dur, getLang, num, signed, t } from "../i18n.js";
 import { STATE_ICON } from "../icons.js";
 
 export function effectLabel(r) {
@@ -90,4 +91,56 @@ export function mountCompare(box, rows) {
     const domain = r.status === "ok" ? Math.max(Math.abs(r.low), Math.abs(r.high), Math.abs(r.diff)) * 1.15 || 1 : 1;
     draw(el, (w) => interval(r, domain, { width: w, flip: el.dataset.sign === "-1" }));
   });
+}
+
+// Chinese has no spaces between words: keep each phrase together (phrases end at punctuation or a "|" hint)
+const phrases = (text) => (getLang() === "zh"
+  ? text.split(/(?<=[，：；。])|\|/).filter(Boolean).map((x) => `<span class="ph">${esc(x)}</span>`).join("")
+  : esc(text.replace(/\|/g, "")));
+
+// after hard training days: next-morning HRV, resting heart rate and soreness against easier days
+function trainingLine(r, R) {
+  const unit = R.units[r.outcome];
+  const show = (v) => (unit === "%" ? `${num(Math.abs(v), 1)}%` : unit === "bpm" ? t("stim.bpm", { v: num(Math.abs(v), 1) }) : t("rec.levels", { v: num(Math.abs(v), 1) }));
+  const range = (v) => `${v < 0 ? "−" : ""}${unit === "%" ? `${num(Math.abs(v), 1)}%` : num(Math.abs(v), 1)}`;
+  return t("stim.out_line", { dir: t(`rec.out.${r.outcome}.${r.diff >= 0 ? "up" : "down"}`, { v: show(r.diff) }), low: range(r.low), high: range(r.high) });
+}
+
+export function trainingResponseHtml(R, days) {
+  if (!R) return "";
+  const head = R.median_load != null ? t("rec.exp", { v: num(R.median_load) }) : t("rec.exp_none", { n: R.method.min_group_days });
+  const rows = compareHtml(R.rows, { name: (r) => t(`rec.out.${r.outcome}`), better: (r) => R.better[r.outcome],
+    text: (r) => (r.status === "ok" ? trainingLine(r, R) : t("stim.too_few_line", { a: r.yes_days, b: r.no_days, n: R.method.min_group_days })) });
+  return `<div class="better-group"><h3 class="section-title">${t("rec.body_title")}<span class="aside">${t("rec.body_sub", { n: days })}</span></h3>
+    <p class="small" style="margin:0 0 var(--s-2)">${esc(head)}</p><div data-response="training">${rows}</div>
+    <p class="xs muted" style="margin:10px 0 0">${t("rec.body_note")}</p></div>`;
+}
+
+// after stimulating screen days: that night and the next morning against calmer days (an association)
+function screenLine(r, R) {
+  const unit = R.units[r.outcome];
+  const show = (v) => (unit === "%" ? `${num(Math.abs(v), 1)}%` : unit === "bpm" ? t("stim.bpm", { v: num(Math.abs(v), 1) }) : dur(Math.abs(v)));
+  const range = (v) => (unit === "%" ? `${v < 0 ? "−" : ""}${num(Math.abs(v), 1)}%` : unit === "bpm" ? `${v < 0 ? "−" : ""}${num(Math.abs(v), 1)}` : `${v < 0 ? "−" : ""}${dur(Math.abs(v))}`);
+  return t("stim.out_line", { dir: t(`stim.out.${r.outcome}.${r.diff >= 0 ? "up" : "down"}`, { v: show(r.diff) }), low: range(r.low), high: range(r.high) });
+}
+
+export function screenResponseHtml(R) {
+  if (!R) return "";
+  const groups = ["fun_high", "late_fun"].map((e) => {
+    const rows = R.rows.filter((r) => r.exposure === e);
+    const head = e === "fun_high"
+      ? (R.median_fun != null ? t("stim.exp.fun_high", { v: dur(R.median_fun) }) : t("stim.exp.fun_high_none"))
+      : t("stim.exp.late_fun", { v: dur(R.calm_min) });
+    const items = compareHtml(rows, { name: (r) => t(`stim.out.${r.outcome}`), better: (r) => R.better[r.outcome],
+      text: (r) => (r.status === "ok" ? screenLine(r, R) : t("stim.too_few_line", { a: r.yes_days, b: r.no_days, n: R.method.min_group_days })) });
+    return `<p class="small" style="margin:var(--s-3) 0 var(--s-2)">${esc(head)}</p><div data-response="${e}">${items}</div>`;
+  }).join("");
+  return `<div class="better-group"><h3 class="section-title">${t("stim.body_title")}<span class="aside">${t("stim.body_sub", { n: R.days })}</span></h3>
+    ${groups}<p class="xs muted" style="margin:10px 0 0">${phrases(t("stim.body_note"))}</p></div>`;
+}
+
+export function mountResponses(root, training, screen) {
+  const box = (key) => root.querySelector(`[data-response="${key}"]`);
+  if (training && box("training")) mountCompare(box("training"), training.rows);
+  if (screen) ["fun_high", "late_fun"].forEach((e) => { if (box(e)) mountCompare(box(e), screen.rows.filter((r) => r.exposure === e)); });
 }

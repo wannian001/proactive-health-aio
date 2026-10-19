@@ -193,8 +193,8 @@ class Isolation(unittest.TestCase):
         self.assertIn("rangeStrip(", read("js/pages/drain.js"))
         self.assertIn("trendLine(", read("js/pages/drain.js"))
         self.assertIn("legendKey(", read("js/pages/drain.js"))
-        self.assertIn("blockColumns(", read("js/pages/week.js"))
-        for page in ("drain.js", "week.js"):
+        self.assertIn("lanes(", read("js/pages/load.js"))  # the weeks of Schedule & load
+        for page in ("drain.js", "week.js", "load.js"):
             self.assertNotIn("<svg viewBox", read(f"js/pages/{page}"), page)  # the drawing lives in charts.js
 
 

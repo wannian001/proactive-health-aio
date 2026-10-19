@@ -1,17 +1,17 @@
 // Recovery (#recovery, under Body signals): the illustrated body with today's soreness and energy and how long they
 // usually take to come back (recovery-overview.js), one card to say how you are right now (energy, this morning's
 // feeling, where you are sore, mind and task, each saved where it already lives), the score the morning after each
-// training day (four parts side by side, averaged, with what it trained and how sore that was), how your body has
-// answered training, and at the bottom the personal HRV model. What training asked of you is on Body & mind load.
+// training day (four parts side by side, averaged, with what it trained and how sore that was), the long view (Wear
+// and tear, drain.js: seven quiet signals over 7 days), and at the bottom the personal HRV model (once one is trained). How the body answers hard days is on Follow-up. What training asked of you is on Body & mind load.
 // The rules are in modules/recovery.py.
 import { isStatic, post } from "../api.js";
 import { draw, esc, scoreDots } from "../charts.js";
 import { clock, day, dur, num, rv, shortDay, t, toDate, wtype } from "../i18n.js";
 import { icon } from "../icons.js";
 import { openTrained } from "../trained.js";
-import { compareHtml, mountCompare } from "./effects.js";
 import { overviewHtml, mountOverview } from "../recovery-overview.js";
 import { hrvModelHtml } from "../hrv-model.js";
+import { drainCards, mountDrain } from "./drain.js";
 
 // a list of regions, both upper arms (or calves) said once
 const PAIRS = [["left_upper_arm", "right_upper_arm", "sore.pair.upper_arms"], ["left_calf", "right_calf", "sore.pair.calves"]];
@@ -65,23 +65,6 @@ function afterHtml(p) {
 }
 
 // ---- how the body answered training, the next morning ------------------------------------------------------------
-function outcomeText(r, R) {
-  const unit = R.units[r.outcome];
-  const show = (v) => (unit === "%" ? `${num(Math.abs(v), 1)}%` : unit === "bpm" ? t("stim.bpm", { v: num(Math.abs(v), 1) }) : t("rec.levels", { v: num(Math.abs(v), 1) }));
-  const range = (v) => `${v < 0 ? "−" : ""}${unit === "%" ? `${num(Math.abs(v), 1)}%` : num(Math.abs(v), 1)}`;
-  return t("stim.out_line", { dir: t(`rec.out.${r.outcome}.${r.diff >= 0 ? "up" : "down"}`, { v: show(r.diff) }), low: range(r.low), high: range(r.high) });
-}
-
-function responseHtml(p) {
-  const R = p.response;
-  const head = R.median_load != null ? t("rec.exp", { v: num(R.median_load) }) : t("rec.exp_none", { n: R.method.min_group_days });
-  const rows = compareHtml(R.rows, { name: (r) => t(`rec.out.${r.outcome}`), better: (r) => R.better[r.outcome],
-    text: (r) => (r.status === "ok" ? outcomeText(r, R) : t("stim.too_few_line", { a: r.yes_days, b: r.no_days, n: R.method.min_group_days })) });
-  return `<section class="card span-12"><h2>${t("rec.body_title")}<span class="aside">${t("rec.body_sub", { n: p.rule.response_days })}</span></h2>
-    <h3 class="section-title">${esc(head)}</h3><div id="rec-compare">${rows}</div>
-    <p class="xs muted" style="margin:10px 0 0">${t("rec.body_note")}</p></section>`;
-}
-
 // ---- soreness: the body figure (tap a region to set its level), the list, 14 days per region -------------------
 // one hue getting stronger (--c-sore-1..3); "not sore" on the figure is --c-sore-0 and on the strips the band colour.
 // The figure follows light and dark mode (figure.js)
@@ -167,16 +150,16 @@ export default {
       <div class="grid">
         ${nowHtml(p)}
         ${afterHtml(p)}
-        ${responseHtml(p)}
-        ${p.hrv_prediction ? `<div class="span-12">${hrvModelHtml(p.hrv_prediction)}</div>` : ""}
+        <h2 class="span-12 doc-section rec-long" id="drain">${t("drain.title")}<span class="aside">${t("drain.sub", { from: day(p.drain.window.from, { weekday: false }), to: day(p.drain.window.to, { weekday: false }) })}</span></h2>
+        ${drainCards(p.drain)}
+        ${p.hrv_prediction?.training ? `<div class="span-12">${hrvModelHtml(p.hrv_prediction)}</div>` : ""}
         <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary>
           <p>${t("rec.rule_after", { good: num(p.after.rule.good, 1), low: num(p.after.rule.low, 1), n: p.after.rule.after_days })}</p>
-          <p>${t("rec.rule_body", { n: p.rule.response_days, k: p.response.method.min_group_days })}</p>
           <p>${t("sore.rule", { n: p.rule.sore_days })}</p></details></section>
       </div>`;
   },
   mount(root, p) {
-    mountCompare(root.querySelector("#rec-compare"), p.response.rows);
+    mountDrain(root, p.drain);
     const A = p.after, scored = A.days.filter((d) => d.score != null);
     const dotTip = (d) => [day(d.date), sessionsText(d), d.trained.length ? `${t("after.trained")} ${regionsShort(d.trained)}` : "", t("after.tip_score", { v: num(d.score, 1) })].filter(Boolean).join(" · ");
     const dots = root.querySelector("#after-dots");

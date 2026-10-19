@@ -768,7 +768,7 @@ main > .subnav a { flex: none; white-space: nowrap; }
   margin-bottom:var(--s-5);
 }
 .ov-layout { display:grid; grid-template-columns:minmax(270px,.85fr) minmax(0,1.6fr); gap:18px; align-items:start; }
-.ov-body-panel,.ov-metric,.ov-records { border:1px solid var(--line); border-radius:20px; background:var(--surface); box-shadow:0 4px 20px color-mix(in srgb,var(--ink) 3%,transparent); }
+.ov-body-panel,.ov-metric { border:1px solid var(--line); border-radius:20px; background:var(--surface); box-shadow:0 4px 20px color-mix(in srgb,var(--ink) 3%,transparent); }
 .ov-body-panel { padding:22px 18px 14px; background:linear-gradient(145deg,var(--surface),var(--surface-2)); }
 .ov-body-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
 .rec-overview h2 { margin:0; font-size:18px; letter-spacing:-.02em; line-height:1.4; }
@@ -836,32 +836,8 @@ main > .subnav a { flex: none; white-space: nowrap; }
 .ov-estimate b { font-size:17px; font-weight:500; display:block; margin-top:2px; }
 .ov-basis summary { cursor:pointer; min-height:30px; align-content:center; font-size:11px; color:var(--ink-3); }
 .ov-basis p { font-size:12px; line-height:1.7; color:var(--ink-2); margin:8px 0; }
-.ov-cardio { padding:22px 24px; }
-.ov-cardio .ov-card-title h2 { font-size:19px; }
-.ov-mini-trend { min-width:0; color:var(--ink-3); font-size:10px; }
-.ov-spark { min-height:78px; display:flex; align-items:center; }
-.ov-spark svg { max-width:100%; }
-.ov-mini-trend > span { display:block; margin-top:4px; text-align:center; }
-.ov-cardio-read { display:flex; align-items:baseline; flex-wrap:wrap; gap:5px 8px; margin:8px 0; }
-.ov-cardio-read strong { font-size:33px; font-weight:600; line-height:1.2; letter-spacing:-.03em; }
-.ov-cardio-read > span { color:var(--ink-3); font-size:11px; }
-.ov-cardio-read .ov-cardio-change { flex-basis:100%; color:var(--ink-2); }
 .ov-text-link { display:inline-block; font-size:11px; color:var(--ink-2); margin-top:10px; }
 .ov-ring-key { font-size:10px; color:var(--ink-3); margin:0 5px; }
-.ov-records { padding:18px 22px; margin-top:18px; }
-.ov-records-title { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
-.ov-records-title h2 { font-size:16px; }
-.ov-records-title > span { color:var(--ink-3); font-size:11px; }
-.ov-record-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin-top:16px; }
-.ov-record { display:flex; align-items:flex-start; gap:12px; padding:0 16px; border-left:1px solid var(--line); text-decoration:none; min-width:0; }
-.ov-record:first-child { border-left:0; padding-left:0; }
-.ov-record:hover { text-decoration:none; }
-.ov-record:hover b { color:var(--accent); }
-.ov-record-icon { border:1px solid var(--line); border-radius:50%; width:36px; height:36px; display:grid; place-items:center; flex:none; }
-.ov-record > div { min-width:0; }
-.ov-record span,.ov-record small { font-size:11px; color:var(--ink-3); }
-.ov-record b { display:block; font-size:16px; line-height:1.5; color:var(--ink); margin:4px 0; font-weight:600; }
-.ov-record small { display:block; line-height:1.7; }
 .ov-evidence { margin-top:16px; border-top:1px solid var(--line); padding-top:10px; font-size:12px; color:var(--ink-2); }
 .ov-evidence summary { cursor:pointer; min-height:30px; align-content:center; }
 .ov-evidence p { color:var(--ink-3); line-height:1.6; }
@@ -875,19 +851,14 @@ main > .subnav a { flex: none; white-space: nowrap; }
   .ov-card-title h2 { font-size:20px; }
   .ov-card-title { gap:7px; }
   .ov-body-stage { height:420px; }
-  .ov-record { padding:0 10px; gap:8px; }
-  .ov-record-icon { display:none; }
 }
 @media (max-width:760px) {
   .ov-layout { grid-template-columns:1fr; }
   .ov-body-panel { padding:18px; }
   .ov-body-stage { height:350px; }
   .ov-metric { grid-template-columns:120px minmax(0,1fr); gap:16px; padding:20px 16px; }
-  .ov-record-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 0; }
-  .ov-record:nth-child(3) { border-left:0; padding-left:0; }
   .ov-selection { max-width:480px; margin:12px auto 0; }
   .ov-region-picker { max-width:480px; margin:auto; }
-  .ov-records { padding:18px; }
 }
 @media (max-width:400px) {
   .ov-metric { grid-template-columns:95px minmax(0,1fr); gap:12px; padding:18px 12px; }
@@ -897,8 +868,6 @@ main > .subnav a { flex: none; white-space: nowrap; }
   .ov-description { font-size:13px; }
   .ov-estimate { padding:10px; gap:8px; }
   .ov-estimate b { font-size:15px; }
-  .ov-cardio-read strong { font-size:28px; }
-  .ov-record b { font-size:14px; }
 }
 
 /* Personal time estimates are separate from the original-scale gauges. */
@@ -934,11 +903,9 @@ main > .subnav a { flex: none; white-space: nowrap; }
 .ov-body-label { white-space:pre-line; font-size:12px; max-width:165px; }
 .ov-selection .ov-prediction-target { font-size:16px; }
 .ov-selection .ov-prediction-band { padding:10px; gap:8px; }
-.ov-cardio { grid-template-columns:155px minmax(0,1fr); }
 @media (max-width:760px) {
  .ov-prediction-band { padding:12px 10px; gap:8px; }
  .ov-prediction-target { font-size:18px; }
- .ov-cardio { grid-template-columns:100px minmax(0,1fr); }
  .ov-time-arc,.ov-time-track { stroke-width:5px; }
 }
 
@@ -983,3 +950,12 @@ main > .subnav a { flex: none; white-space: nowrap; }
   .hm-readings b { font-size:32px; }
   .hm-chart text { font-size:20px; }
 }
+
+/* What you tried (Follow-up): one row per activity, the counts right-aligned */
+.rr-tried { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+.rr-tried th { text-align: left; font-weight: 600; color: var(--ink-3); font-size: var(--t-xs); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.rr-tried td { padding: 8px; border-bottom: 1px solid var(--line); }
+.rr-tried td:first-child { display: flex; align-items: center; gap: 8px; }
+.rr-tried th:not(:first-child), .rr-tried td:not(:first-child) { text-align: right; width: 18%; }
+.rr-tried .rr-glyph { width: 28px; height: 28px; }
+.rr-tried-detail { margin-top: var(--s-3); }

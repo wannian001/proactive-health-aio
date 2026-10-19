@@ -47,7 +47,7 @@ class OneCheckin(unittest.TestCase):
 
     def test_what_was_tried_is_listed_on_follow_up_only(self):
         self.assertNotIn("historyHtml", read("js/pages/restore.js"))
-        self.assertIn("historyHtml(p.restore", read("js/pages/followup.js"))
+        self.assertIn("triedHtml(p.restore)", read("js/pages/followup.js"))  # one row per activity, each time in a fold
 
     def test_quiet_for_two_hours_is_still_reachable(self):
         self.assertIn("nextStep(p, { details: true, link: false, controls: true })", read("js/pages/restore.js"))
@@ -55,7 +55,48 @@ class OneCheckin(unittest.TestCase):
     def test_hrv_model_is_at_the_bottom_of_recovery(self):
         self.assertNotIn("hrvModelHtml", read("js/recovery-overview.js"))
         js = read("js/pages/recovery.js")
-        self.assertLess(js.index("${responseHtml(p)}"), js.index("hrvModelHtml(p.hrv_prediction)"))
+        self.assertLess(js.index("${drainCards(p.drain)}"), js.index("hrvModelHtml(p.hrv_prediction)"))
+        self.assertIn("p.hrv_prediction?.training", js)  # shown only once a model has been trained
+
+
+class FoldedPages(unittest.TestCase):
+    """Pages that answered the same question twice live inside another one now."""
+    @classmethod
+    def setUpClass(cls):
+        from healthaio.server import payload
+        cls.tmp = tempfile.TemporaryDirectory()
+        cfg = config.load(demo.generate(Path(cls.tmp.name), date(2026, 10, 12)))
+        now = datetime(2026, 10, 12, 18, 40)
+        cls.page = {name: payload(cfg, name, None, now) for name in ("followup", "recovery", "week")}
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def test_tomorrow_will_be_better_holds_all_three_analyses(self):
+        p = self.page["followup"]
+        self.assertTrue(p["effects"]["rows"])
+        self.assertEqual({r["outcome"] for r in p["training_response"]["rows"]}, {"hrv", "resting_hr", "sore_max"})
+        self.assertEqual({r["exposure"] for r in p["screen_response"]["rows"]}, {"fun_high", "late_fun"})
+        js = read("js/pages/followup.js")
+        self.assertIn("trainingResponseHtml(p.training_response", js)
+        self.assertIn("screenResponseHtml(p.screen_response)", js)
+        for page in ("js/pages/recovery.js", "js/pages/time.js"):
+            self.assertNotIn("compareHtml(", read(page), page)
+
+    def test_recovery_ends_with_the_long_view(self):
+        self.assertEqual(len(self.page["recovery"]["drain"]["rows"]), 7)
+        self.assertIn('id="drain"', read("js/pages/recovery.js"))
+
+    def test_schedule_carries_body_and_mind_load(self):
+        self.assertEqual(self.page["week"]["body_mind"]["page"], "load")
+        self.assertIn("mountLoad(root, p.body_mind)", read("js/pages/week.js"))
+
+    def test_what_was_tried_is_ranked_from_your_own_answers(self):
+        tried = self.page["followup"]["restore"]["tried"]
+        self.assertTrue(tried)
+        share = lambda b: (b["better"] + b["glad"]) / (2 * b["answered"]) if b["answered"] else -1
+        self.assertEqual([share(b) for b in tried], sorted((share(b) for b in tried), reverse=True))
 
 
 class WordsAndFiles(unittest.TestCase):

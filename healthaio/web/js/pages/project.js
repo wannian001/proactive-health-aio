@@ -1,11 +1,12 @@
 // Overview (#project): what Proactive Health AIO is, who it is for, the problem it answers and how, where the data
 // comes from (which device collects what, how often, and what it costs your computer, measured), how far "proactive"
 // goes today, then the comparison with what people use now, the trade-offs, where it stands, what comes next and who
-// made it (each opening on a click).
+// made it (each opening on a click), and at the end how to use it (guide.js, once a page of its own).
 // The same facts as the README's "Why it exists", shorter. The server only names the page (modules/docs.py).
 // History is not in this repository: it quotes the personal system it comes from, so it lives on the author's site.
 import { esc } from "../charts.js";
 import { getLang, t } from "../i18n.js";
+import { guideSteps } from "./guide.js";
 
 const REPO = "https://github.com/wannian001/proactive-health-aio";
 
@@ -75,7 +76,7 @@ const PROJECT = {
         "它来自我自己用了一年的个人系统，四代迭代见“迭代记录”（在我的网站上）。",
         "Python 标准库，不用装别的包；颜色、组件和图表是一套带版本号的设计套件；每条规则都有测试。"] },
     ],
-    links: [[REPO, "GitHub 仓库"], ["#guide", "使用说明"], ["history", "迭代记录"], ["#kit", "设计套件"]],
+    links: [[REPO, "GitHub 仓库"], ["#project/guide", "使用说明"], ["history", "迭代记录"], ["#kit", "设计套件"]],
   },
   en: {
     title: "Overview", sub: "What it is, who it is for, and how it differs from what people use now",
@@ -142,7 +143,7 @@ const PROJECT = {
         "It comes from the personal system I have used for a year; its four generations are in History (on my own site).",
         "Python's standard library, nothing else to install; colours, components and charts are one versioned design kit; every rule has tests."] },
     ],
-    links: [[REPO, "GitHub repository"], ["#guide", "Guide"], ["history", "History"], ["#kit", "Design kit"]],
+    links: [[REPO, "GitHub repository"], ["#project/guide", "Guide"], ["history", "History"], ["#kit", "Design kit"]],
   },
 };
 
@@ -194,6 +195,7 @@ export default {
         ${dataHtml(c)}
         ${ladderHtml(c)}
         <section class="card"><ol class="doc-folds">${c.folds.map(fold).join("")}</ol></section>
+        ${guideSteps(false)}
         <p class="doc-try">${links}</p>
       </div>`;
   },

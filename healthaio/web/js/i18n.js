@@ -636,7 +636,7 @@ Object.assign(DICT.en, {
   "stim.what.longest_focus": "on work or learning, longer is better",
   "stim.per_hour": "{v} / h",
   "stim.hormone_note": "Dopamine, cortisol and melatonin can't be measured by a phone or a watch, so no number here is a hormone. The page measures what goes in (these five) and what your body does next (below).",
-  "stim.body_title": "How your body answered", "stim.body_sub": "the night and next morning, over the last {n} days with Screen Time",
+  "stim.body_title": "After stimulating screen days", "stim.body_sub": "the night and next morning, over the last {n} days with Screen Time",
   "stim.exp.fun_high": "After days with more entertainment & social than your median ({v})",
   "stim.exp.fun_high_none": "After days with more entertainment & social than your median (too few days yet)",
   "stim.exp.late_fun": "After evenings with more than {v} of it in the hour before sleep",
@@ -682,7 +682,7 @@ Object.assign(DICT.zh, {
   "stim.what.longest_focus": "工作或学习类应用，越长越好",
   "stim.per_hour": "每小时 {v} 次",
   "stim.hormone_note": "多巴胺、皮质醇、褪黑素，手机和手表都测不了，所以这里没有一个数是激素。这一页量的是两头：你给大脑的刺激（这五个），和身体接下来的反应（下面）。",
-  "stim.body_title": "身体怎么回应", "stim.body_sub": "当晚和第二天早上，最近 {n} 个有屏幕时间的日子",
+  "stim.body_title": "屏幕刺激多的日子之后", "stim.body_sub": "当晚和第二天早上，最近 {n} 个有屏幕时间的日子",
   "stim.exp.fun_high": "娱乐和社交比你的中位数（{v}）多的日子之后",
   "stim.exp.fun_high_none": "娱乐和社交比你的中位数多的日子之后（天数还不够）",
   "stim.exp.late_fun": "睡前一小时刷了 {v}以上的晚上之后",
@@ -939,12 +939,12 @@ Object.assign(DICT.zh, {
 
 // ---- the reading pages under the menu (their own words are in pages/project.js and guide.js; History is on the author's site) ----
 Object.assign(DICT.en, {
-  "nav.about": "Data and about", "nav.project": "Overview", "nav.guide": "Guide", "nav.history": "History",
+  "nav.about": "Data and about", "nav.project": "Overview & guide", "nav.guide": "Guide", "nav.history": "History",
   "doc.history_url": "https://tangjiakuo.top/demo/aio-history/en/",
   "doc.other_lang": "阅读中文版",
 });
 Object.assign(DICT.zh, {
-  "nav.about": "数据和说明", "nav.project": "项目说明", "nav.guide": "使用说明", "nav.history": "迭代记录",
+  "nav.about": "数据和说明", "nav.project": "项目说明与用法", "nav.guide": "使用说明", "nav.history": "迭代记录",
   "doc.history_url": "https://tangjiakuo.top/demo/aio-history/",
   "doc.other_lang": "Read in English",
 });
@@ -1157,7 +1157,7 @@ Object.assign(DICT.en, {
   "rec.rated_share": "{pct}% of workout minutes have an effort score", "rec.unrated": "{d} this week without one, left out",
   "rec.tip_load": "load {v}", "rec.no_effort": "no effort",
   "rec.cns_note": "No device measures how tired your nervous system is. The load is what training asked of you, as you (or the watch) rated it; your autonomic nervous system's answer is the next morning's HRV and resting heart rate, on Recovery (the morning after training). Same idea as Apple Fitness's Training Load.", "rec.to_recovery": "The morning after training",
-  "rec.body_title": "How your body answered training", "rec.body_sub": "the next morning, over the last {n} days",
+  "rec.body_title": "After hard training days", "rec.body_sub": "the next morning, over the last {n} days",
   "rec.exp": "After hard days (load above the median of your training days, {v}), against easier and rest days",
   "rec.exp_none": "After hard days: fewer than {n} fully rated training days yet",
   "rec.out.hrv": "Next morning's HRV", "rec.out.resting_hr": "Next morning's resting heart rate", "rec.out.sore_max": "Next morning's soreness (worst region)",
@@ -1193,7 +1193,7 @@ Object.assign(DICT.zh, {
   "rec.rated_share": "{pct}% 的训练分钟有强度评分", "rec.unrated": "这周有 {d} 没有评分，没算进去",
   "rec.tip_load": "负荷 {v}", "rec.no_effort": "没有评分",
   "rec.cns_note": "没有设备能直接测神经系统累不累。负荷是训练对你的要求，按你（或手表）打的强度分算；自主神经系统的回应要看第二天早上的 HRV 和静息心率，在“恢复”页的“练后第二天”。思路和 Apple 健身 App 的“训练负荷”一样。", "rec.to_recovery": "看练后第二天",
-  "rec.body_title": "身体怎么回应训练", "rec.body_sub": "第二天早上，最近 {n} 天",
+  "rec.body_title": "练得重的日子之后", "rec.body_sub": "第二天早上，最近 {n} 天",
   "rec.exp": "练得重的日子（负荷高于你训练日的中位数 {v}）之后，和轻松的日子、休息日比",
   "rec.exp_none": "练得重的日子之后：每次训练都有评分的训练日还不到 {n} 天",
   "rec.out.hrv": "第二天早上的 HRV", "rec.out.resting_hr": "第二天早上的静息心率", "rec.out.sore_max": "第二天早上的酸痛（最酸的部位）",
@@ -1220,7 +1220,7 @@ Object.assign(DICT.zh, {
 
 // ---- Load (#load, modules/load.py), the morning feeling and the after-training score (modules/recovery.py) ----
 Object.assign(DICT.en, {
-  "nav.schedule_week": "Week", "nav.load_tab": "Body & mind load",
+  "nav.schedule_week": "Schedule & load", "nav.load_tab": "Body & mind load",
   "load.title": "Body & mind load", "load.sub": "What is asked of you each week, by the body and by the mind",
   "load.eyebrow": "This week, from {day}",
   "load.lede.stacked": "Body and mind are both loaded this week", "load.lede.mind": "The mind's side is heavier than usual this week",
@@ -1275,7 +1275,7 @@ Object.assign(DICT.en, {
   "rec.rule_after": "The morning after each training day of the last {n} days: how you feel (your answer, 2, 5 or 8), HRV the morning after against the morning before the training, resting heart rate against your normal, and the night after (how long you slept against your normal, and how much of the time in bed you were asleep). Each body part is 5 plus 2.5 for every width of your normal it lies away, better direction up, between 0 and 10 (HRV's normal is that of its morning-to-morning changes). The parts are averaged; a morning needs two of them, one from the body. {good} and above reads as recovered well, under {low} as not recovered. It is the one total score in the app, and every part is shown with it.",
 });
 Object.assign(DICT.zh, {
-  "nav.schedule_week": "一周日程", "nav.load_tab": "身心负荷",
+  "nav.schedule_week": "日程与负荷", "nav.load_tab": "身心负荷",
   "load.title": "身心负荷", "load.sub": "每周身体和精神各被要求了多少",
   "load.eyebrow": "这一周，{day} 起",
   "load.lede.stacked": "这周身体和精神的负荷叠在一起", "load.lede.mind": "这周精神上的负荷比平常重",
@@ -1915,6 +1915,12 @@ Object.assign(DICT.en, {
   "now.static": "The online demo is read-only. On your own computer, Save writes each answer to your own files.",
   "now.link": "Note how you are now",
   "now.item": "Right now",
+  "rr.tried.activity": "Activity",
+  "rr.tried.times": "Times",
+  "rr.tried.better": "Better after",
+  "rr.tried.glad": "Glad I did",
+  "rr.tried_hint": "From your own answers after each one, best first. Ones you didn't answer stay unknown.",
+  "rr.tried_detail": "Every time, one by one",
   "now.sore_scale": "three steps: a little, clearly, very",
   "now.rule": "Each answer is saved where it already lives. Energy (0–10) is kept with its time and is what the energy estimate learns from. This morning's feeling and the soreness (a little, clearly, very) are that morning's check-in, which the morning-after score uses. Mind and task count for 4 hours and steer Rest & rewards; for its suggestion, energy 3 or lower counts as tired, 6 or higher as comfortable, and any region clearly sore or worse today as sore.",
 });
@@ -1936,6 +1942,12 @@ Object.assign(DICT.zh, {
   "now.static": "在线演示只能看。在自己电脑上运行时，保存会把每一项写进你自己的文件。",
   "now.link": "记一下此刻怎么样",
   "now.item": "此刻",
+  "rr.tried.activity": "活动",
+  "rr.tried.times": "做了几次",
+  "rr.tried.better": "之后变好",
+  "rr.tried.glad": "开心",
+  "rr.tried_hint": "按你每次做完后自己的回答排，最有用的在上面。没回答的那次算不知道。",
+  "rr.tried_detail": "每一次的明细",
   "now.sore_scale": "三档：有点、明显、很酸",
   "now.rule": "每一项都存到它原来的地方。精力（0–10）带着时间存下来，精力多久回到平常的预估就是从这些记录里学的。早上的恢复感受和酸痛（有点、明显、很酸）是当天早上的打卡，练后第二天的分会用。精神状态和任务难度参考四小时，给「休息与奖励」用；给休息建议时，精力 3 分及以下算累了，6 分及以上算还舒服，今天有部位明显酸或更重算有酸痛。",
 });

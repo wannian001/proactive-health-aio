@@ -80,11 +80,34 @@ def situation(ctx, current=None):
                      "logged_carbs_g": round(sum(carbs), 1) if carbs else None}}
 
 
+def tried(sessions):
+    """What each activity has done for you, from your own reflections: finished sessions, how many you said how it went,
+    how many left you better, how many you were glad of (and how many left you more tired). Ranked by the share that
+    were better or glad among the ones you answered; activities you never answered about come last. Unanswered is
+    unknown, never "it didn't help"."""
+    by = {}
+    for s in sessions:
+        if s["status"] != "finished":
+            continue
+        b = by.setdefault(s["activity"], {"activity": s["activity"], "times": 0, "answered": 0, "better": 0, "worse": 0, "glad": 0,
+                                          "last": s["started_at"]})
+        b["times"] += 1
+        b["last"] = max(b["last"], s["started_at"])
+        f = s.get("feedback") or {}
+        if f.get("change") or f.get("enjoyment"):
+            b["answered"] += 1
+            b["better"] += f.get("change") == "better"
+            b["worse"] += f.get("change") == "worse"
+            b["glad"] += f.get("enjoyment") == "yes"
+    score = lambda b: (b["better"] + b["glad"]) / (2 * b["answered"]) if b["answered"] else -1
+    return sorted(by.values(), key=lambda b: (score(b), b["times"]), reverse=True)
+
+
 def build(ctx, day=None):
     current = restore_log.replay(restore_log.read(ctx.cfg))
     return {"page": "restore", "today": iso(ctx.today), "demo": ctx.cfg.demo,
             "situation": situation(ctx, current), "active": current["active"],
-            "sessions": current["sessions"][:30],
+            "sessions": current["sessions"][:30], "tried": tried(current["sessions"]),
             "rewards": [r for r in current["rewards"] if r["status"] == "planned"] +
                        [r for r in current["rewards"] if r["status"] != "planned"][:30],
             "activities": list(restore_log.ACTIVITIES)}

@@ -1,7 +1,7 @@
-// Body & mind load (#load, under Schedule): what is being asked of you, week by week, from the body (training load)
-// and from the mind (hours of classes and work, the share of grade due), the 8 weeks behind and the 4 ahead, each
-// against your normal; then the training load day by day. Nothing is added into one number. The rules are in
-// modules/load.py.
+// Body & mind load: what is being asked of you, week by week, from the body (training load) and from the mind (hours
+// of classes and work, the share of grade due), the 8 weeks behind and the 4 ahead, each against your normal; then
+// the training load day by day. Nothing is added into one number. The rules are in modules/load.py. It is drawn on
+// the Schedule page (#week, schedule & load); #load still renders it alone, for old links and the tests.
 import { draw, esc, lanes, stackedColumns } from "../charts.js";
 import { day, dur, num, shortDay, t, wtype } from "../i18n.js";
 import { icon, STATE_ICON } from "../icons.js";
@@ -33,7 +33,7 @@ function tile(key, w, p) {
     <div class="note"><span class="piece">${esc(band(p.bands[key], key))}</span></div></div>`;
 }
 
-function heroHtml(p) {
+export function heroHtml(p) {
   const w = p.this_week;
   const lede = w.stacked ? t("load.lede.stacked") : w.mind_heavy ? t("load.lede.mind") : w.state.training === "high" ? t("load.lede.body") : t("load.lede.usual");
   const lighter = p.weeks.filter((x) => x.plan_lighter);
@@ -45,7 +45,7 @@ function heroHtml(p) {
     <div class="tiles act-tiles" style="margin-top:var(--s-3)">${["training", "calendar", "deadlines"].map((k) => tile(k, w, p)).join("")}</div></section>`;
 }
 
-function weeksHtml(p) {
+export function weeksHtml(p) {
   const legend = `<span class="key"><i style="background:var(--c-exercise)"></i>${t("load.key.done")}</span>
     <span class="key"><i class="hatch" style="color:var(--c-exercise)"></i>${t("load.key.planned")}</span>
     <span class="key"><i style="background:var(--c-band)"></i>${t("load.key.now")}</span>`;
@@ -54,7 +54,7 @@ function weeksHtml(p) {
     <p class="xs muted" style="margin:8px 0 0">${t("load.weeks_note")}</p></section>`;
 }
 
-function trainingHtml(p) {
+export function trainingHtml(p) {
   const L = p.training;
   let lede;
   if (L.state === "none") lede = t("rec.load_line.none");
@@ -79,6 +79,10 @@ function dueHtml(p) {
   return `<section class="card span-12"><h2>${t("load.due_title")}<span class="aside"><a href="#week">${t("load.to_schedule")} ›</a></span></h2><ul class="load-due">${rows}</ul></section>`;
 }
 
+export const loadRules = (p) => `<p>${t("load.rule", { a: p.rule.past_weeks, n: p.rule.min_weeks })}</p>
+  <p>${t("load.note")}</p>
+  <p>${t("rec.rule_load", { a: p.rule.acute, c: p.rule.chronic, pct: num(p.rule.min_rated * 100) })}</p>`;
+
 export default {
   render(p) {
     return `<div class="head"><div><h1>${t("load.title")}</h1><div class="sub">${t("load.sub")}</div></div></div>
@@ -87,13 +91,14 @@ export default {
         ${weeksHtml(p)}
         ${trainingHtml(p)}
         ${dueHtml(p)}
-        <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary>
-          <p>${t("load.rule", { a: p.rule.past_weeks, n: p.rule.min_weeks })}</p>
-          <p>${t("load.note")}</p>
-          <p>${t("rec.rule_load", { a: p.rule.acute, c: p.rule.chronic, pct: num(p.rule.min_rated * 100) })}</p></details></section>
+        <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary>${loadRules(p)}</details></section>
       </div>`;
   },
-  mount(root, p) {
+  mount(root, p) { mountLoad(root, p); },
+};
+
+export function mountLoad(root, p) {
+  {
     const W = p.weeks;
     // the heaviest week ahead and the weeks to plan lighter are marked under their column
     const heaviest = p.heaviest?.start;
@@ -114,5 +119,5 @@ export default {
     const days = p.training_days.map((d) => ({ label: shortDay(d.date), values: d.load == null ? null : { load: d.load },
       tip: d.load == null ? `${day(d.date)} · ${t("ui.no_data")}` : `${day(d.date)} · ${t("rec.tip_load", { v: num(d.load) })}${d.sessions?.length ? ` · ${d.sessions.map((s) => `${wtype(s.type)} ${dur(s.minutes)}${s.effort ? ` × ${num(s.effort)}` : ` (${t("rec.no_effort")})`}`).join(", ")}` : ""}` }));
     draw(root.querySelector("#load-days"), (w) => stackedColumns(days, [["load", "var(--c-exercise)"]], { width: w, height: 180, minutes: false, unitFmt: (v) => num(v), labelEvery: Math.max(1, Math.ceil(42 / Math.max(1, w / 44))) }));
-  },
-};
+  }
+}

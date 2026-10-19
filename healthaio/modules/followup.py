@@ -170,6 +170,18 @@ def ways(key: str, given: List[Dict[str, Any]], tonight: Optional[Dict[str, Any]
     return out
 
 
+def responses(ctx: Context, end: date) -> Dict[str, Any]:
+    """The two other "how the body answered" analyses that "Tomorrow will be better" holds: the morning after hard
+    training days (recovery.response) and the night and morning after stimulating screen days (time.response)."""
+    from . import recovery, time as screen
+    days = recovery.daily_load(ctx, end)
+    recovery.annotate(days, recovery.workout_notes(ctx))
+    seen = [d for d in screen.data_days(ctx) if d < end]
+    return {"training_response": recovery.response(ctx, end, days, recovery.soreness_log(ctx)),
+            "training_days": recovery.RESPONSE_DAYS,
+            "screen_response": screen.response(ctx, seen[-1], screen.stim_series(ctx)) if seen else None}
+
+
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     from . import restore
     end = min(date.fromisoformat(day) if day else ctx.today, ctx.today)
@@ -201,6 +213,6 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
             "yesterday_kept": sum(1 for x in shown if x["met"]), "yesterday_known": sum(1 for x in shown if x["met"] is not None),
             "dates": [iso(d) for d in window], "rows": rows, "stuck": [r["key"] for r in rows if r["stuck"]],
             "given_days": sum(1 for d in days if d["items"]),
-            "effects": today_page.effects(ctx, end),
+            "effects": today_page.effects(ctx, end), **responses(ctx, end),
             "rule": {"days": DAYS, "tolerance_min": TOLERANCE_MIN, "calm_min": CALM_MIN,
                      "stuck_of": STUCK_OF, "stuck_missed": STUCK_MISSED}}

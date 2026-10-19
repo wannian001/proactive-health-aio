@@ -159,7 +159,9 @@ function header(active) {
 }
 
 async function route(event) {
-  const [raw, param] = (location.hash.replace(/^#/, "") || "today").split("/");
+  const [raw, rest] = (location.hash.replace(/^#/, "") || "today").split("/");
+  // #recovery/now opens Recovery at the "How you are right now" card; any other second part is a date
+  const focus = rest === "now" ? "now" : null, param = focus ? undefined : rest;
   if (OUTSIDE[raw]) { location.replace(t(OUTSIDE[raw])); return; }  // an old #history link: the page moved to the author's site
   const name = ALIAS[raw] || raw;
   const page = PAGES[name] ? name : "today";
@@ -174,9 +176,10 @@ async function route(event) {
     main.innerHTML = updateNote() + sub + PAGES[page].render(data) + footer();
     mountUpdate(main);
     PAGES[page].mount?.(main, data);
+    if (focus) main.querySelector(`#${focus}`)?.scrollIntoView({ block: "start" });
     if (event?.type === "healthaio:restore-saved") {
       const { op, ref } = event.detail;
-      const selector = op === "start" ? ".rr-current h3" : op === "checkin" ? ".rr-self" :
+      const selector = op === "start" ? ".rr-current h3" :
         ["finish", "cancel", "feedback"].includes(op) ? `[data-rr-session="${ref}"] h3` :
         op.startsWith("reward_") ? ".rr-rewards-layout h2" : "#rr-next-title";
       const target = main.querySelector(selector) || main.querySelector("h1");

@@ -229,14 +229,32 @@ def effects(ctx: Context, day: date) -> Dict[str, Any]:
             "method": {"min_group_days": stats.MIN_GROUP_DAYS, "fdr": stats.FDR, "baseline_days": stats.BASELINE_DAYS}}
 
 
+def energy_now(ctx: Context, day: date) -> Optional[Dict[str, Any]]:
+    """The latest energy rated that day on Recovery's "How you are right now" card (0–10, with its time), or None."""
+    from .. import recovery_log
+    try:
+        rows = recovery_log.read(ctx.cfg)
+    except ValueError:  # a damaged log is reported on Recovery; Today just leaves the rating out
+        return None
+    now = recovery_log.moment(ctx.cfg, ctx.now)
+    seen = [(at, r) for r in rows if r["kind"] == "energy"
+            for at in [datetime.fromisoformat(r["at"]).astimezone(now.tzinfo)] if at.date() == day and at <= now]
+    if not seen:
+        return None
+    at, r = max(seen, key=lambda x: x[0])
+    return {"value": r["value"], "at": at.isoformat(timespec="seconds")}
+
+
 def self_report(ctx: Context, day: date) -> Optional[Dict[str, Any]]:
     rows = [r for r in ctx.store.rows("self_report") if day - timedelta(days=1) <= r["date"] <= day]
-    if not rows:
+    rated = energy_now(ctx, day)
+    if not rows and rated is None:
         return None
-    row = rows[-1]
-    # the feeling is that morning's answer on the Recovery check-in, so only today's counts
+    row = rows[-1] if rows else {"date": day}
+    # the feeling is that morning's answer on the Recovery check-in, so only today's counts; energy rated on the card
+    # (0–10) is shown instead of a hand-typed 0–5 one
     return {"date": iso(row["date"]), "energy": row.get("energy"), "focus": row.get("focus"), "note": row.get("note"),
-            "feel": row.get("feel") if row["date"] == day else None}
+            "feel": row.get("feel") if row["date"] == day else None, "energy_now": rated}
 
 
 def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:

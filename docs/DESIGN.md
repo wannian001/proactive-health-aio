@@ -111,7 +111,7 @@ The first page under Body signals, because recovery is the body signal the day's
   click hits, so the region under the pointer is read from the masks' own pixels. The figure is line art with a
   see-through background, made from Ready to Train's reference images and painted in `--plate-ink` on `--plate`, so
   it sits on a light plate in light mode and a dark one in dark mode; the soreness colours (`--c-sore-1..3`) are one
-  hue getting stronger, the same in both modes. A morning without a check-in is unknown.
+  yellow getting stronger, the same in both modes and on every body figure. A morning without a check-in is unknown.
 - **What a workout trained.** Soreness the next morning means little without knowing what was trained, and the
   watch does not know (a strength session is just "strength training"). So after a strength session or a hard one
   (effort 7 or more on Apple's scale, where 7–8 is "hard"), every page shows a note in the corner for 36 hours after

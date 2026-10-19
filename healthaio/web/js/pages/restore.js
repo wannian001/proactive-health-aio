@@ -1,7 +1,7 @@
 import { isStatic } from "../api.js";
 import { esc } from "../charts.js";
 import { day, t } from "../i18n.js";
-import { ACTIVITY, activityIcon, activeHtml, checkinHtml, historyHtml, modeNote, mountRestore, nextStep, restoreButton } from "../restore-ui.js";
+import { ACTIVITY, activityIcon, activeHtml, modeNote, mountRestore, nextStep, nowLine, restoreButton } from "../restore-ui.js";
 
 // Only UI preferences live in memory. All activity, check-in and reward state comes from the server.
 let tab = "rest", filter = "all", selected = null;
@@ -12,7 +12,7 @@ function library(p) {
     <span class="rr-glyph">${activityIcon(key, 26)}</span><span><b>${t(`rr.activity.${key}`)}</b><small>${t(`rr.${ACTIVITY[key].category}`)}</small></span><span class="rr-card-arrow" aria-hidden="true">${selected === key ? "✓" : "↗"}</span></button>`).join("");
   const choice = selected && !p.active ? `<div class="rr-selection"><h3>${t(`rr.activity.${selected}`)}</h3><p class="small muted">${t(`rr.desc.${selected}`)}</p><p class="xs muted">${t("rr.no_timer")}</p>${restoreButton("start", "rr.start", `data-rr-activity="${selected}"`, true)}<p class="rr-msg small" role="status"></p></div>` : "";
   return `${activeHtml(p)}<div class="rr-library-head"><h2>${t("rr.free")}</h2><div class="rr-filters" aria-label="${esc(t("rr.rest_tab"))}">${["all", "quiet", "outside", "social", "playful"].map((key) => `<button type="button" data-rr-filter="${key}" aria-pressed="${key === filter}">${t(`rr.${key}`)}</button>`).join("")}</div></div>
-    <div class="rr-activities">${cards}</div>${choice}<div class="rr-section-gap">${historyHtml(p)}</div><a class="rr-more-link" href="#followup">${t("rr.followup")} →</a>`;
+    <div class="rr-activities">${cards}</div>${choice}<a class="rr-more-link" href="#followup">${t("rr.followup")} →</a>`;
 }
 
 function rewardRow(r, pending) {
@@ -35,7 +35,7 @@ function content(p) {
 export default {
   render(p) {
     return `<div class="head"><div><h1>${t("nav.restore")}</h1><div class="sub">${t("rr.sub")}</div></div></div>
-      <div class="grid"><section class="card span-12 rr-intro">${nextStep(p, { details: true, link: false, controls: false })}${checkinHtml(p)}</section><div class="span-12" id="rr-content">${content(p)}</div>
+      <div class="grid"><section class="card span-12 rr-intro">${nextStep(p, { details: true, link: false, controls: true })}${nowLine(p)}</section><div class="span-12" id="rr-content">${content(p)}</div>
       <section class="card span-12"><details class="how"><summary>${t("rr.rules")}</summary><p>${t("rr.rules_text")}</p></details>${modeNote(p)}</section></div>`;
   },
   mount(root, p) {

@@ -2,18 +2,22 @@
 
 The Recovery route (`#recovery`) opens with a selectable illustrated regional body map,
 two stacked horizontal cards (soreness and energy), cardio fitness and related
-sleep, HRV, resting-heart-rate and training-load records. The morning check-in,
-14-day regional history and after-training analyses remain below it.
+sleep, HRV, resting-heart-rate and training-load records. Below it, one card, "How you are right now",
+takes everything you say (energy 0–10, this morning's feeling, soreness chosen on the body, mind and task);
+then the after-training analyses, and the personal HRV model at the bottom. The overview itself writes
+nothing: choosing a region and a level fills in that card, which saves.
 
-恢复页顶部为部位地图、上下排列的酸痛与精力横卡、心肺趋势和相关记录。
-早上打卡、14 天记录与练后分析仍在下方。人体插画可左右切换正面、左右侧面和背面，大小固定；
-点击只选择部位，明确选择酸痛等级后仍需在打卡区保存。
+恢复页顶部为部位地图、上下排列的酸痛与精力横卡、心肺趋势和相关记录。下面是「此刻怎么样」一张卡，
+要说的都在这里（精力 0–10、早上的恢复感受、在人体图上选的酸痛、精神状态和任务），再往下是练后分析，
+个人 HRV 模型在最下面。人体插画可左右切换正面、左右侧面和背面，大小固定；点击只选择部位，
+选了程度之后在「此刻怎么样」里保存。
 
 ## Meaning and missing data
 
-- New current-time check-ins keep the original **0–10** rating with timezone-aware server timestamps.
-  A reported range remains a range; its drawing midpoint is not a training label. Legacy morning
-  soreness **0–3** and energy **0–5** remain separate and are labeled with their original scale.
+- Energy is rated **0–10** with a timezone-aware server timestamp. Soreness keeps its three levels
+  (**0–3**, a little / clearly / very) on the morning check-in. Older 0–10 soreness ratings and 0–5
+  energy entered by hand are still read and labeled with their own scale; the page no longer asks for them.
+  A reported range remains a range; its drawing midpoint is not a training label.
 - The main soreness reading is the maximum of explicitly recorded regions. With timestamped input,
   untouched regions stay unknown. Selecting a region never changes whole-person energy.
 - Both cards show a time window and target when personal history supports one. Daily observations
@@ -29,7 +33,7 @@ sleep, HRV, resting-heart-rate and training-load records. The morning check-in,
   annotations; an unannotated workout does not imply untrained muscles.
 - Historical Recovery dates apply to both self-report and cardio data.
 
-新打卡采用原始 0–10 分并记录时间；旧四档酸痛、0–5 精力仍保留。时间和目标突出显示，
+精力用 0–10 分并记录时间；酸痛在早上打卡里保留三档。以前记的 0–10 酸痛和手填的 0–5 精力照样读、标明各自的量表，页面不再问。时间和目标突出显示，
 有足够历史才出范围。区间自评保持原区间；设备值不代替主观标签。心肺读取已有长期趋势，
 人体只呈现现有区域，不能推断单块肌肉的状态。
 
@@ -53,8 +57,8 @@ clipped to its alpha and retaining muscle shading. No yellow or health values ar
 baked into the source image. Rendering happens only on view, data, appearance or
 size changes, with pixel ratio capped at 2. Route changes release observers and
 handlers. If the illustration cannot load, the region selector and data still work.
-All assets are local; no WebGL or third-party requests are needed. Legacy BodyParts3D
-and Three.js files retain their original credits but are no longer loaded here.
+All assets are local; no WebGL or third-party requests are needed. The earlier 3D model
+(BodyParts3D with Three.js) was removed from the repository when the illustration replaced it.
 
 人体使用生成插画，四个视角切换，不声称可连续 3D 旋转。素材没有预设酸痛。
 上色来自所选日期的记录；点击只选择，修改仍需明确保存。

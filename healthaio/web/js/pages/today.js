@@ -6,7 +6,7 @@ import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js";
 import { COLOR, icon, STATE_ICON } from "../icons.js";
 import { worseLine } from "./drain.js";
 import { helping } from "./effects.js";
-import { checkinHtml, modeNote, mountRestore, nextStep, quietSuggestion } from "../restore-ui.js";
+import { nowItem, nowLine, quietSuggestion } from "../restore-ui.js";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const chip = (cls, text, glyph = "") => `<span class="chip ${cls}">${glyph}${esc(text)}</span>`;
@@ -85,22 +85,25 @@ function todoWhy(x) {
   }
 }
 
+// what to adjust today, opened by what Rest & rewards says right now (if anything): that line is about this moment,
+// so it is not one of the three
 function todoHtml(p) {
-  const a = p.actions;
-  if (!a || (!a.steady && !a.items.length)) return "";
-  const body = a.steady ? `<p class="lede" style="font-size:var(--t-lg);margin:0">${t("todo.steady")}</p>`
+  const a = p.actions, now = nowItem(p.restore);
+  if ((!a || (!a.steady && !a.items.length)) && !now) return "";
+  const body = !a || (!a.steady && !a.items.length) ? "" : a.steady ? `<p class="lede" style="font-size:var(--t-lg);margin:0">${t("todo.steady")}</p>`
     : `<ol class="todo">${a.items.map((x) => `<li><a class="todo-item" href="${x.link}">
         <span class="todo-icon" style="color:${COLOR[TODO_ICON[x.domain]] || "var(--ink-2)"}">${icon(TODO_ICON[x.domain], 20)}</span>
         <span class="todo-body"><b>${esc(todoTitle(x))}</b><span class="small muted">${esc(todoWhy(x))}</span></span></a></li>`).join("")}</ol>`;
-  return `<div class="today-todo"><h2 class="section-title">${t("todo.title")}</h2>${body}
+  return `<div class="today-todo"><h2 class="section-title">${t("todo.title")}</h2>${now}${body}
     <p class="small today-followup"><a href="#followup">${t("fu.today_link")} ›</a></p>
     <details class="how"><summary>${t("ui.how")}</summary><p>${t("todo.rule")}</p></details></div>`;
 }
 
 function morningHtml(p) {
   const r = p.recovery;
-  const self = p.self && (p.self.energy != null || p.self.focus != null || p.self.feel != null)
-    ? `<p class="small muted" style="margin:0">${esc(t("self.title"))}${t("today.colon")}${esc([p.self.feel != null ? t("self.feel", { v: t(`feel.${p.self.feel}`) }) : "", p.self.energy != null ? t("self.energy", { v: num(p.self.energy) }) : "", p.self.focus != null ? t("self.focus", { v: num(p.self.focus) }) : ""].filter(Boolean).join(SEP()))}</p>` : "";
+  const S = p.self, energy = S?.energy_now ? t("now.energy_value", { v: num(S.energy_now.value) }) : S?.energy != null ? t("self.energy", { v: num(S.energy) }) : "";
+  const self = S && (energy || S.focus != null || S.feel != null)
+    ? `<p class="small muted" style="margin:0">${esc(t("self.title"))}${t("today.colon")}${esc([S.feel != null ? t("self.feel", { v: t(`feel.${S.feel}`) }) : "", energy, S.focus != null ? t("self.focus", { v: num(S.focus) }) : ""].filter(Boolean).join(SEP()))}</p>` : "";
   const behind = r.days_behind > 1 ? `<p class="chip watch" style="height:auto;padding:4px 10px;white-space:normal">${t("recovery.behind", { n: r.days_behind, day: day(r.as_of) })}</p>` : "";
   const legend = `<div class="legend">
     <span class="key"><i style="background:var(--c-sleep)"></i>${t("ring.sleep")}</span>
@@ -111,7 +114,7 @@ function morningHtml(p) {
     <div class="ring-wrap"><div id="ring" style="width:100%;max-width:360px"></div>${legend}</div>
     <div class="stack" style="gap:var(--s-5)">
       <div class="verdict"><span class="eyebrow" ${r.as_of ? `title="${esc(t("recovery.as_of", { day: day(r.as_of) }))}"` : ""}>${t("recovery.eyebrow")}</span>
-        <p class="lede" style="font-size:var(--t-3xl);margin:0">${t(`recovery.${r.verdict}`)}</p>${self}${behind}</div>
+        <p class="lede" style="font-size:var(--t-3xl);margin:0">${t(`recovery.${r.verdict}`)}</p>${self}${nowLine(p.restore)}${behind}</div>
       <div><h2 class="section-title">${t("today.title")}</h2>${dayLines(p)}${tonightHtml(p)}</div>
     </div></div>${todoHtml(p)}</section>`;
 }
@@ -216,18 +219,17 @@ export default {
     const prev = shiftDay(p.day, -1), next = shiftDay(p.day, 1);
     const stepper = `<div class="stepper"><a href="#today/${prev}">‹ ${t("ui.prev_day")}</a>
       ${p.looking_back ? `<a href="${next === p.today ? "#today" : `#today/${next}`}">${t("ui.next_day")} ›</a><a href="#today">${t("ui.back_today")}</a>` : `<span aria-disabled="true">${t("ui.next_day")} ›</span>`}</div>`;
+    // when Rest & rewards says to go easy, today's adjustments drop the ones that add training; while you are resting,
+    // absorbed or asked for quiet, they wait
     const restore = p.restore;
-    // Keep the day ring and original details, with one immediate next step in front.
     const gentle = restore && ["reported", "gentler", "signals", "trend"].includes(restore.situation.key);
     const actions = gentle && p.actions ? { ...p.actions, items: p.actions.items.filter((x) => !["move", "strength"].includes(x.key)) } : p.actions;
     const daily = { ...p, actions: quietSuggestion(restore) ? null : actions };
-    const overview = restore ? `<details class="card span-12 rr-day-overview"><summary>${t("rr.overview")}</summary><div>${morningHtml(daily)}</div></details>` : morningHtml(p);
     return `<div class="head"><div><h1>${p.looking_back ? t("today.looking_back", { day: day(p.day) }) : t("today.title")}</h1>
       <div class="sub">${day(p.day)}</div></div>${stepper}</div>
-      <div class="grid">${restore ? `<section class="card span-12 rr-today">${nextStep(restore)}${restore.active ? "" : checkinHtml(restore)}${modeNote(restore)}</section>` : ""}${overview}${linesHtml(p)}</div>`;
+      <div class="grid">${morningHtml(daily)}${linesHtml(p)}</div>`;
   },
   mount(root, p) {
-    mountRestore(root);
     const ringBox = root.querySelector("#ring");
     const now = p.ring.now ? clock(p.ring.now) : clock(p.ring.sleep?.end);
     draw(ringBox, (w) => dayRing(p.ring, { size: Math.max(260, Math.min(360, w)), center: now, centerSub: p.ring.now ? t("ring.now") : day(p.day) }));

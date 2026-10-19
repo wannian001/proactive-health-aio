@@ -1,4 +1,5 @@
-// Shared components for Today, Recovery, Rest & rewards and Follow-up.
+// Shared components for Today, Rest & rewards and Follow-up. Current feelings are said in one place, the
+// "How you are right now" card on Recovery; the pages here show what was said and link to it.
 import { isStatic, post } from "./api.js";
 import { esc } from "./charts.js";
 import { clock, day, measure, num, t } from "./i18n.js";
@@ -51,14 +52,21 @@ function choices(field, values, selected, prefix = `rr.${field}`) {
   return `<fieldset><legend>${t(`rr.${field}`)}</legend><div class="rr-choices">${values.map((value) => `<button type="button" data-rr-field="${field}" data-rr-value="${value}" aria-pressed="${selected === value}"${disabled()}>${esc(t(`${prefix}.${value}`))}</button>`).join("")}</div></fieldset>`;
 }
 
-export function checkinHtml(p, open = false) {
+export function nowLine(p) {
   if (!p) return "";
   const c = p.situation.checkin, last = p.situation.last_checkin;
   const words = c ? Object.keys(CHOICES).filter((k) => c[k]).map((k) => t(`rr.${k}.${c[k]}`)).join(t("ui.list_sep")) : t("rr.check_none");
-  return `<div class="rr-checkin"><div class="rr-self"><span>${icon("communication", 18)} <b>${esc(words)}</b></span><span class="xs muted">${c ? t("rr.check_at", at(c.at)) : last ? t("rr.check_old", at(last.at)) : ""}</span></div>
-    <details${open ? " open" : ""}><summary>${t("rr.check")}</summary><form data-rr-form="checkin" class="rr-form">
-      <p class="small muted">${t("rr.check_hint")}</p>${Object.entries(CHOICES).map(([field, values]) => choices(field, values, c?.[field])).join("")}
-      <div class="rr-actions"><button class="rr-button primary" type="submit"${disabled()}>${t("rr.save")}</button><p class="rr-msg small" role="status"></p></div></form></details></div>`;
+  return `<p class="rr-self small"><span>${icon("communication", 16)} <b>${esc(words)}</b></span>
+    <span class="xs muted">${c ? t("rr.check_at", at(c.at)) : last ? t("rr.check_old", at(last.at)) : ""}</span>
+    <a href="#recovery/now">${t("now.link")} ›</a></p>`;
+}
+
+// Today's "what to adjust" opens with this, when there is something to say right now
+export function nowItem(p) {
+  if (!p || ["steady", "unknown"].includes(p.situation.key)) return "";
+  const s = p.situation, key = s.key, goal = ["challenge", "smaller"].includes(key);
+  return `<a class="todo-item todo-now" href="${goal ? "#goals" : "#restore"}"><span class="todo-icon">${activityIcon(key === "active" ? p.active.activity : goal ? "target" : "sleep", 20)}</span>
+    <span class="todo-body"><span class="eyebrow">${t("now.item")}</span><b>${esc(t(`rr.title.${key}`))}</b><span class="small muted">${esc(t(`rr.why.${key}`, { time: clock(s.quiet_until) }))}</span></span></a>`;
 }
 
 export function activeHtml(p) {
@@ -132,9 +140,9 @@ export function mountRestore(root) {
       if (op === "reward_plan") {
         payload.title = form.elements.title.value.trim(); payload.note = form.elements.note.value.trim();
       } else {
-        const fields = op === "checkin" ? Object.keys(CHOICES) : ["change", "enjoyment"];
+        const fields = ["change", "enjoyment"];
         fields.forEach((field) => { payload[field] = form.querySelector(`[data-rr-field="${field}"][aria-pressed="true"]`)?.dataset.rrValue || null; });
-        if (fields.every((k) => payload[k] === null)) { form.querySelector(".rr-msg").textContent = t(op === "checkin" ? "rr.check_required" : "rr.feedback_required"); return; }
+        if (fields.every((k) => payload[k] === null)) { form.querySelector(".rr-msg").textContent = t("rr.feedback_required"); return; }
       }
       send(form, payload);
     };

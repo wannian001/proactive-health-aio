@@ -1,13 +1,12 @@
 import { esc, draw, spark } from "./charts.js";
 import { day, num, measure, t, toDate, wtype } from "./i18n.js";
 import { icon } from "./icons.js";
-import { rv } from "./recovery-copy.js";
+import { rv } from "./i18n.js";
 import { mountBody } from "./recovery-model.js";
-import { isStatic, post } from "./api.js";
 import { forecastHtml, forecastText, forecastTarget } from "./recovery-forecast.js";
-import { hrvModelHtml } from "./hrv-model.js";
 
-// All figures below come from existing records. No rescaling and no synthetic ETA.
+// All figures below come from existing records. No rescaling and no synthetic ETA. Nothing is written from here:
+// choosing a region and a level fills in the "How you are right now" card below, which saves.
 export function sorenessSummary(levels, known) {
   if (!known) return { value: null, regions: [], count: null };
   const entries = Object.entries(levels).filter(([, v]) => Number.isFinite(v) && v > 0);
@@ -31,13 +30,6 @@ function ring(value, max, label, caption, kind, forecast) {
 }
 
 
-function currentForm(kind, region = null) {
-  return `<details class="ov-now"><summary>${rv(kind === "energy" ? "recordEnergyNow" : "recordSoreNow")}</summary>
-    <form class="ov-now-form" data-kind="${kind}"${region ? ` data-region="${esc(region)}"` : ""}>
-      <label>${rv("newScale")}<input aria-label="${rv(kind === "energy" ? "recordEnergyNow" : "recordSoreNow")}" type="number" min="0" max="10" step="1" required${isStatic ? " disabled" : ""}></label>
-      <button type="submit"${isStatic ? " disabled" : ""}>${rv("saveNow")}</button><p class="ov-now-msg" role="status">${rv(isStatic ? "nowDemo" : "nowHint")}</p>
-    </form></details>`;
-}
 
 function currentSore(p) { return p.current_ratings?.soreness || {}; }
 function timedSore(p) { return Object.keys(currentSore(p)).length > 0; }
@@ -55,7 +47,7 @@ function soreCard(p, levels = p.soreness.levels, draft = false) {
   return `${ring(S.value, timed ? 10 : 3, rv("worst"), timed ? rv("soreness") : S.value == null ? rv("unknown") : t(`sore.level.${S.value}`), "ov-sore", draft ? null : f)}
     <div class="ov-card-copy"><div class="ov-card-title"><h2>${t("sore.title")}</h2><span class="ov-tag">${rv("current")}</span></div>
       <p class="ov-description">${S.value == null ? rv("noToday") : S.value === 0 ? rv("noSoreness") : esc(rv("most", { regions: names }))}</p>
-      <p class="ov-secondary">${draft ? rv("draft") : S.value == null ? (p.soreness.latest ? esc(rv("latestSore", { date: day(p.soreness.latest) })) : rv("selectPrompt")) : `${rv("count", { n: S.count })} · ${esc(day(p.day))}${timed ? ` · ${rv("newScale")}` : ` · ${rv("legacyScale")}`}`}</p>
+      <p class="ov-secondary">${draft ? rv("draft") : S.value == null ? (p.soreness.latest ? esc(rv("latestSore", { date: day(p.soreness.latest) })) : rv("selectPrompt")) : `${rv("count", { n: S.count })} · ${esc(day(p.day))}${timed ? ` · ${rv("newScale")}` : ` · ${t("now.sore_scale")}`}`}</p>
       ${forecastHtml(p, "soreness", { draft })}</div>`;
 }
 
@@ -66,7 +58,7 @@ function energyCard(p) {
     <div class="ov-card-copy"><div class="ov-card-title"><h2>${rv("energy")}</h2><span class="ov-tag">${rv("current")}</span></div>
       ${value == null ? `<p class="ov-description">${rv("noEnergy")}</p>` : ""}
       <p class="ov-secondary">${current ? `${rv("latest", { date: day(current.recorded_at) })} · ${rv("newScale")}` : self && value != null ? `${esc(rv("latest", { date: day(self.date) }))}${self.date !== p.day ? ` · ${rv("historicalEnergy")}` : ""} · ${rv("legacyScale")}` : rv("energySource")}</p>
-      ${forecastHtml(p, "energy")}${currentForm("energy")}</div>`;
+      ${forecastHtml(p, "energy")}<a class="ov-text-link" href="#recovery/now">${t("now.link")} ↓</a></div>`;
 }
 
 function cardioCard(p) {
@@ -92,7 +84,7 @@ function related(p) {
 }
 
 export function overviewHtml(p) {
-  return `<section class="rec-overview" aria-label="${rv("title")}">${hrvModelHtml(p.hrv_prediction)}<div class="ov-layout">
+  return `<section class="rec-overview" aria-label="${rv("title")}"><div class="ov-layout">
     <section class="ov-body-panel"><div class="ov-body-head"><h2>${rv("muscles")}</h2><div class="ov-view-switch" role="group" aria-label="${rv("muscles")}">
       <button type="button" data-ov-view="sore" aria-pressed="true">${rv("soreness")}</button><button type="button" data-ov-view="trained" aria-pressed="false">${rv("trained")}</button></div></div>
       <div class="ov-body-stage"><p class="ov-model-message">${rv("loading")}</p></div>
@@ -108,17 +100,6 @@ export function overviewHtml(p) {
 
 export function mountOverview(root, p, { onLevel, openEditor }) {
   const wrap = root.querySelector(".rec-overview");
-  wrap.addEventListener("submit", async event => {
-    const form = event.target.closest(".ov-now-form"); if (!form) return;
-    event.preventDefault(); if (isStatic) return;
-    const button = form.querySelector("button"), msg = form.querySelector(".ov-now-msg");
-    const payload = { kind: form.dataset.kind, region: form.dataset.region || null, value: Number(form.querySelector("input").value) };
-    const signature = JSON.stringify(payload);
-    if (form.dataset.signature !== signature) { form.dataset.signature = signature; form.dataset.requestId = crypto.randomUUID(); }
-    button.disabled = true;
-    try { await post("recovery-checkin", { ...payload, request_id: form.dataset.requestId }); window.dispatchEvent(new HashChangeEvent("hashchange")); }
-    catch (error) { msg.textContent = String(error.message); button.disabled = false; }
-  });
   let levels = { ...(p.soreness.today ? p.soreness.levels : {}) }, draft = false, selected = "", view = "sore", model;
   const recent = p.after.days.filter(d => (toDate(p.day) - toDate(d.date)) / 86400000 < 7);
   const trained = new Set(recent.flatMap(d => d.trained));
@@ -133,7 +114,6 @@ export function mountOverview(root, p, { onLevel, openEditor }) {
       <p>${session ? esc(rv("lastTrained", { date: day(session.date), type: wtype(session.type) })) : rv("notTrained")}</p>
       ${view === "trained" ? `<p>${rv("trainingHint")}</p>` : ""}
       ${forecastHtml(p, "soreness", { draft, region: selected })}
-      ${currentForm("soreness", selected)}
       <details class="ov-local-edit"><summary>${rv("edit")}</summary><div class="ov-levels" role="group" aria-label="${t(`sore.region.${selected}`)}">${[0, 1, 2, 3].map(v => `<button type="button" data-ov-level="${v}" aria-pressed="${known && v === value}">${t(`sore.level.${v}`)}</button>`).join("")}</div>
       <button type="button" class="ov-open-editor">${draft ? rv("draftHelp") : rv("editor")} →</button></details>`;
     el.querySelector(".ov-local-edit").open = !!editing;

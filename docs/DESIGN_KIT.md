@@ -87,9 +87,10 @@ Colours, light and dark ("same" = the same value in both modes):
 | `--c-axis` | `rgba(22, 22, 22, .22)` | `rgba(236, 238, 245, .22)` | Axes and baselines |
 | `--c-mark` | `#161616` | `#eceef5` | A neutral mark: this week, an average, a deadline |
 | `--c-sore-0` | `#e5e5ea` | `#3a4152` | A body region with nothing sore, on the plate |
-| `--c-sore-1` | `#f6c1cf` | same | Soreness: a little (the Recovery page's body figure and strips) |
-| `--c-sore-2` | `#ec6f8d` | same | Soreness: clearly sore |
-| `--c-sore-3` | `#c81d4b` | same | Soreness: very sore |
+| `--c-sore-1` | `#f8dd8b` | same | Soreness: a little (the Recovery page's body figures, gauge and strips) |
+| `--c-sore-2` | `#eeb947` | same | Soreness: clearly sore |
+| `--c-sore-3` | `#d99519` | same | Soreness: very sore; also the soreness gauge's arc |
+| `--c-estimate` | `#b4a0ed` | same | How far ahead an estimate reaches: the outer ring of Recovery's soreness and energy gauges |
 | `--plate` | `#ffffff` | `#1c2130` | The body figure's plate |
 | `--plate-ink` | `#3a3a3c` | `#c3c9d6` | The figure's line art and the labels on the plate |
 | `--good` | `#0ca30c` | same | good mark in a chart |
@@ -206,6 +207,7 @@ changed files under a version that is not newer.
 
 | version | date | change |
 |---|---|---|
+| 1.9.0 | 2026-10-19 | Soreness `--c-sore-1..3` becomes one yellow getting stronger (the Recovery page's illustrated body used its own yellows; now every body figure, gauge and strip shares the kit's); new token `--c-estimate` for the outer ring that shows how far ahead an estimate reaches |
 | 1.8.0 | 2026-10-14 | `scoreDots`: one dot per scored day on a fixed scale with the usual band and reference lines (Recovery's morning-after scores); `lanes` columns take `flag`, a word under the column in `--watch-ink` (the week to plan lighter, the heaviest week ahead) |
 | 1.7.1 | 2026-10-14 | `--plate`, `--plate-ink` and `--c-sore-0` get dark-mode values: the body figure is now line art painted in `--plate-ink`, so it sits on a dark plate in dark mode instead of a white one |
 | 1.7.0 | 2026-10-14 | Tokens `--c-sore-0` to `--c-sore-3` (soreness, one hue getting stronger, the same in both modes) and `--plate`, `--plate-ink` (the body figure's white plate), for the Recovery page |
@@ -285,9 +287,10 @@ Health AIO 身兼两职：它是一个本地优先看板的公开展示，也是
 | `--c-axis` | `rgba(22, 22, 22, .22)` | `rgba(236, 238, 245, .22)` | 坐标轴和基线 |
 | `--c-mark` | `#161616` | `#eceef5` | 中性标记：这一周、平均线、截止 |
 | `--c-sore-0` | `#e5e5ea` | `#3a4152` | 人体图上不酸的部位 |
-| `--c-sore-1` | `#f6c1cf` | 同左 | 酸痛：有点酸（恢复页的人体图和小格） |
-| `--c-sore-2` | `#ec6f8d` | 同左 | 酸痛：明显酸 |
-| `--c-sore-3` | `#c81d4b` | 同左 | 酸痛：很酸 |
+| `--c-sore-1` | `#f8dd8b` | 同左 | 酸痛：有点酸（恢复页的人体图、仪表和小格） |
+| `--c-sore-2` | `#eeb947` | 同左 | 酸痛：明显酸 |
+| `--c-sore-3` | `#d99519` | 同左 | 酸痛：很酸；也是酸痛仪表的弧 |
+| `--c-estimate` | `#b4a0ed` | 同左 | 预估能看多远：恢复页酸痛、精力仪表的外圈 |
 | `--plate` | `#ffffff` | `#1c2130` | 人体图的底板 |
 | `--plate-ink` | `#3a3a3c` | `#c3c9d6` | 人体图的线条和底板上的文字 |
 | `--good` | `#0ca30c` | 同左 | 图上“好”的标记 |
@@ -367,6 +370,7 @@ Health AIO 身兼两职：它是一个本地优先看板的公开展示，也是
 
 | 版本 | 日期 | 改了什么 |
 |---|---|---|
+| 1.9.0 | 2026-10-19 | 酸痛 `--c-sore-1..3` 改成同一种黄色由浅到深（恢复页的人体插画原来用自己的一套黄色，现在所有人体图、仪表和小格都用套件里的这一套）；新增 `--c-estimate`，仪表外圈表示预估能看多远 |
 | 1.8.0 | 2026-10-14 | 新增 `scoreDots`：固定刻度上，有分的日子各一个点，带平常的阴影带和参考线（恢复页的练后第二天分）；`lanes` 的列可以带 `flag`，用 `--watch-ink` 写在这一列下面的一个词（该减量的周、接下来最重的一周） |
 | 1.7.1 | 2026-10-14 | `--plate`、`--plate-ink`、`--c-sore-0` 有了深色模式的值：人体图改成用 `--plate-ink` 画的线稿，深色模式下底板也是深色，不再是白的 |
 | 1.7.0 | 2026-10-14 | 新变量 `--c-sore-0` 到 `--c-sore-3`（酸痛，同一色相由浅到深，深浅色下相同）和 `--plate`、`--plate-ink`（人体图的白色底板），给恢复页用 |

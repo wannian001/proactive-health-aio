@@ -25,7 +25,7 @@ TODAY = date(2026, 10, 12)
 NOW = datetime(2026, 10, 12, 18, 40)
 KIT_PATHS = [path for path, _ in kit.FILES]
 # colour tokens that dark mode keeps on purpose (status fills read the same on both backgrounds)
-SAME_IN_BOTH = {"--good", "--watch", "--off", "--c-sore-1", "--c-sore-2", "--c-sore-3"}
+SAME_IN_BOTH = {"--good", "--watch", "--off", "--c-sore-1", "--c-sore-2", "--c-sore-3", "--c-estimate"}
 COLOUR_ROLES = {"neutral", "accent", "data", "status"}
 
 
@@ -148,10 +148,7 @@ class Tokens(unittest.TestCase):
 
     def test_every_variable_the_app_uses_is_defined(self):
         for path in [p for p in WEB.rglob("*") if p.suffix in (".css", ".js", ".html")]:
-            text = path.read_text(encoding="utf-8")
-            # Page-scoped CSS may declare its own properties without changing the exported kit.
-            local = set(re.findall(r"(--[\w-]+)\s*:", text)) if path.suffix == ".css" else set()
-            missing = used_vars(text) - self.light - local
+            missing = used_vars(path.read_text(encoding="utf-8")) - self.light
             self.assertFalse(missing, f"{path.name} uses undefined {sorted(missing)}")
 
     def test_kit_css_spacing_and_corners_use_the_tokens(self):
@@ -190,7 +187,7 @@ class Isolation(unittest.TestCase):
 
     def test_index_loads_tokens_then_kit_then_app(self):
         links = re.findall(r'<link rel="stylesheet" href="([^"]+)"', read("index.html"))
-        self.assertEqual(links, ["css/tokens.css", "css/kit.css", "css/app.css", "css/recovery-overview.css"])
+        self.assertEqual(links, ["css/tokens.css", "css/kit.css", "css/app.css"])
 
     def test_pages_use_the_kit_drawings(self):
         self.assertIn("rangeStrip(", read("js/pages/drain.js"))

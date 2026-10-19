@@ -1,5 +1,5 @@
 // Four AI-rendered views, not a mesh. All overlays use recorded regional data.
-import { rv } from "./recovery-copy.js";
+import { rv } from "./i18n.js";
 import { t } from "./i18n.js";
 
 const VIEWS = ["angleFront", "angleLeft", "angleBack", "angleRight"];
@@ -122,7 +122,7 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
         // Preserve the neutral source shading for a recorded zero.
         if (value === 0) continue;
         ink.save(); ink.filter = "blur(5px)"; ink.globalAlpha = value == null ? .28 : value === "trained" ? .55 : [.0,.32,.57,.78][value];
-        ink.fillStyle = style.getPropertyValue(value == null ? "--ov-body-unknown" : value === "trained" ? "--c-exercise" : `--ov-sore-${value}`).trim();
+        ink.fillStyle = style.getPropertyValue(value == null ? "--c-axis" : value === "trained" ? "--c-exercise" : `--c-sore-${value}`).trim();
         polygons.forEach(polygon => {
           ink.beginPath(); polygon.forEach(([x,y], i) => i ? ink.lineTo(x * cellW, y * cellH) : ink.moveTo(x * cellW, y * cellH));
           ink.closePath(); ink.fill();

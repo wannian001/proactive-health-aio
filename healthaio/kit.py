@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 # Bump on every change to any of the four kit files: patch for a value or drawing fix, minor for a new token, class,
 # function or option, major for a rename or removal (it breaks an app that uses the old name). kit.lock.json holds
 # the hashes of the current version's files, and a test fails when a file changes while the version stays the same.
-KIT_VERSION = "1.8.0"
+KIT_VERSION = "1.9.0"
 NAME = "healthaio-kit"
 WEB = Path(__file__).resolve().parent / "web"
 LOCK = Path(__file__).resolve().parent / "kit.lock.json"

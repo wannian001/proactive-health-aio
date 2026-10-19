@@ -14,6 +14,7 @@ import random
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from .store import write_table
 
@@ -429,6 +430,22 @@ class Sam:
                 rows.append({"date": day, "region": region, "level": level})
         return rows
 
+    def energy_ratings(self, report: List[Dict]) -> List[Dict]:
+        """Sam rates his energy on the 0–10 "How you are right now" card on the mornings he rated it: about twice his
+        0–5 answer, give or take one, a little after eight; and this morning too, so the demo has a current rating."""
+        rng = random.Random(SEED + 43)
+        tz = ZoneInfo("Australia/Melbourne")
+        by_day = {(r["date"] if isinstance(r["date"], date) else date.fromisoformat(r["date"])): r["energy"]
+                  for r in report if r.get("energy") is not None}
+        by_day.setdefault(self.today, 3)
+        out = []
+        for i, (day, energy) in enumerate(sorted(by_day.items())):
+            at = datetime.combine(day, datetime.min.time(), tzinfo=tz).replace(hour=7 if day == self.today else 8, minute=rng.randint(5, 50))
+            out.append({"request_id": f"demo-energy-{day.isoformat()}", "kind": "energy", "region": None,
+                        "value": max(0, min(10, energy * 2 + rng.choice((-1, 0, 0, 1)))), "v": 1,
+                        "id": f"demo{i:08d}", "at": at.isoformat(timespec="seconds"), "scale": 10})
+        return out
+
     def with_feelings(self, report: List[Dict], body: List[Dict], mornings) -> List[Dict]:
         """On the mornings Sam checks in he also answers how he feels: 8 after a good night with HRV above his usual,
         2 after a short night or a low HRV, 5 otherwise, now and then off by one answer (his own random stream)."""
@@ -619,7 +636,8 @@ def generate(out: Path, today: Optional[date] = None, now: Optional[datetime] = 
     events = sam.events()
     write_table(data, "body_daily", body)
     sore = sam.soreness()
-    write_table(data, "self_report", sam.with_feelings(sam.self_report(body), body, {r["date"] for r in sore}))
+    report = sam.with_feelings(sam.self_report(body), body, {r["date"] for r in sore})
+    write_table(data, "self_report", report)
     write_table(data, "events", events)
     write_table(data, "deadlines", sam.deadlines())
     sam.rate_workouts()
@@ -638,4 +656,6 @@ def generate(out: Path, today: Optional[date] = None, now: Optional[datetime] = 
                 "note": {"en": "A smaller step first: half an hour less a day, then look again in two weeks.",
                          "zh": "先小步收：每天少半小时，两周后再看。"}}
     (out / "goals.jsonl").write_text(json.dumps(proposal, ensure_ascii=False) + "\n", encoding="utf-8")
+    # energy said on the "How you are right now" card, kept with its time (see recovery_log)
+    (out / "recovery_observations.jsonl").write_text("".join(json.dumps(r) + "\n" for r in sam.energy_ratings(report)), encoding="utf-8")
     return config

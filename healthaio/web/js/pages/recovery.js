@@ -1,40 +1,18 @@
-// Recovery (#recovery, under Body signals): how recovered you are (the Today page's verdict), the morning check-in
-// (how you feel, 2 / 5 / 8, and where you are sore on the body figure from the author's GEOM90007 Ready to Train
-// project; saved into self_report.csv and soreness.csv; the parts a recent workout trained are asked about first,
-// a button per level), the score the morning after each training day (four parts side by side, averaged, with what
-// it trained and how sore that was), and how your body has answered training. What training asked of you is on
-// Body & mind load. The rules are in modules/recovery.py.
+// Recovery (#recovery, under Body signals): the illustrated body with today's soreness and energy and how long they
+// usually take to come back (recovery-overview.js), one card to say how you are right now (energy, this morning's
+// feeling, where you are sore, mind and task, each saved where it already lives), the score the morning after each
+// training day (four parts side by side, averaged, with what it trained and how sore that was), how your body has
+// answered training, and at the bottom the personal HRV model. What training asked of you is on Body & mind load.
+// The rules are in modules/recovery.py.
 import { isStatic, post } from "../api.js";
-import { checkinHtml, mountRestore } from "../restore-ui.js";
-import { bullet, draw, esc, scoreDots } from "../charts.js";
-import { figureSvg, mountFigure } from "../figure.js";
-import { day, dur, measure, num, shortDay, t, toDate, wtype } from "../i18n.js";
-import { icon, STATE_ICON } from "../icons.js";
+import { draw, esc, scoreDots } from "../charts.js";
+import { clock, day, dur, num, rv, shortDay, t, toDate, wtype } from "../i18n.js";
+import { icon } from "../icons.js";
 import { openTrained } from "../trained.js";
 import { compareHtml, mountCompare } from "./effects.js";
 import { overviewHtml, mountOverview } from "../recovery-overview.js";
-import { rv } from "../recovery-copy.js";
+import { hrvModelHtml } from "../hrv-model.js";
 
-const toneCls = (tone) => (tone === "good" ? "good" : tone === "bad" ? "bad" : "");
-const LOAD_TONE = { high: "watch", low: "", steady: "good" };
-
-function stateChip(m) {
-  if (m.partial) return `<span class="chip">${t("state.partial")}</span>`;
-  if (!m.state) return `<span class="chip">${t("state.none")}</span>`;
-  return `<span class="chip ${toneCls(m.tone)}">${STATE_ICON[m.tone] || ""}${t(`state.${m.state}`)}</span>`;
-}
-
-function tile(m) {
-  const band = m.band ? t("band", { low: measure(m.band.q1, m.unit), high: measure(m.band.q3, m.unit) }) : "";
-  return `<div class="tile act-tile">
-    <div class="label"><span class="act-name">${icon(m.key === "sleep" ? "sleep" : "heart", 16)}<span>${t(`metric.${m.key}`)}</span></span>${stateChip(m)}</div>
-    <div class="act-value"><div class="value">${measure(m.value, m.unit)}</div></div>
-    <div class="bul" data-key="${m.key}"></div>
-    <div class="note"><span class="piece">${esc(band)}</span></div></div>`;
-}
-
-const regionsText = (levels) => Object.entries(levels).sort((a, b) => b[1] - a[1])
-  .map(([r, lv]) => t("sore.with_level", { region: t(`sore.region.${r}`), level: t(`sore.level_short.${lv}`) })).join(t("ui.list_sep"));
 // a list of regions, both upper arms (or calves) said once
 const PAIRS = [["left_upper_arm", "right_upper_arm", "sore.pair.upper_arms"], ["left_calf", "right_calf", "sore.pair.calves"]];
 function regionsShort(list) {
@@ -47,21 +25,6 @@ function regionsShort(list) {
   return out.join(t("ui.list_sep"));
 }
 
-function heroHtml(p) {
-  const r = p.recovery, L = p.load, S = p.soreness;
-  const loadChip = L.state === "none" || L.state === "unknown" || L.state === "few_ratings"
-    ? `<span class="chip">${t(`rec.load.${L.state}`)}</span>`
-    : `<span class="chip ${LOAD_TONE[L.state]}">${t(`rec.load.${L.state}`)}</span>`;
-  const sore = S.today ? (Object.keys(S.levels).length ? regionsText(S.levels) : t("sore.none_today")) : t("sore.not_today");
-  return `<section class="card span-12"><span class="eyebrow">${t("recovery.eyebrow")}${r.as_of ? ` · ${esc(day(r.as_of))}` : ""}</span>
-    <p class="lede" style="margin:6px 0 var(--s-3)">${t(`recovery.${r.verdict}`)}</p>
-    <div class="rec-facts"><a class="rec-fact" href="#load">${icon("exercise", 16)}<span>${t("rec.load_title")}</span>${loadChip}</a>
-      <span class="rec-fact">${icon("heart", 16)}<span>${t("sore.title")}</span><span class="chip">${esc(sore)}</span></span></div>
-    <div class="tiles act-tiles" style="margin-top:var(--s-4)">${r.metrics.map(tile).join("")}</div>
-    <p class="xs muted" style="margin:var(--s-3) 0 0">${t("rec.verdict_note")}</p></section>`;
-}
-
-// ---- the morning after each training day: four parts side by side, averaged ---------------------------------
 const BAND_TONE = { good: "good", ok: "", low: "bad" };
 function partText(k, x) {
   if (k === "feel") return t(`feel.${x.value}`);
@@ -125,7 +88,6 @@ function responseHtml(p) {
 const SORE = ["var(--c-sore-0)", "var(--c-sore-1)", "var(--c-sore-2)", "var(--c-sore-3)"];
 const fill = (level) => SORE[level || 0];
 const stripFill = (level) => (level ? SORE[level] : "var(--c-band)");
-const soreLabel = (r, lv) => t("sore.region_aria", { region: t(`sore.region.${r}`), level: t(`sore.level.${lv || 0}`) });
 
 // a cell per morning; under it, a short bar on the days that region was trained (as noted after the workout)
 function stripSvg(days, width) {
@@ -139,40 +101,63 @@ function stripSvg(days, width) {
   }).join("")}</svg>`;
 }
 
-function sorenessHtml(p) {
-  const S = p.soreness;
-  const head = S.today ? t("sore.head_today") : S.latest ? t("sore.head_latest", { day: day(S.latest) }) : t("sore.head_none");
-  const legend = [0, 1, 2, 3].map((lv) => `<span class="key"><i style="background:${fill(lv)}"></i>${t(`sore.level.${lv}`)}</span>`).join("");
-  const levels = S.today ? S.levels : {};
+// The one place to say how you are: energy right now (0–10, kept with its time), this morning's feeling (2 / 5 / 8) and
+// where you are sore (chosen on the body above, a little / clearly / very), and mind and task for Rest & rewards. One
+// save writes each answer where it already lives (recovery_observations.jsonl, self_report.csv and soreness.csv,
+// restore.jsonl); anything left unanswered is not written.
+const MIND = ["clear", "tired", "tense", "bored", "engaged"], TASK = ["easy", "fit", "hard"];
+const sameDay = (iso, d) => Boolean(iso) && iso.slice(0, 10) === d;
+const pressed = (on) => `aria-pressed="${Boolean(on)}"`;
+
+function soreList(levels, known) {
+  const set = Object.entries(levels).filter(([, lv]) => lv > 0);
+  if (!set.length) return `<span class="small muted">${t(known ? "sore.none_short" : "now.sore_none_yet")}</span>`;
+  return set.sort((a, b) => b[1] - a[1]).map(([r, lv]) => `<span class="chip now-sore-chip"><i style="background:${fill(lv)}"></i>${esc(t(`sore.region.${r}`))} · ${esc(t(`sore.level.${lv}`))}</span>`).join("");
+}
+
+function lastSaved(p) {
+  const e = p.current_ratings?.energy, c = p.restore?.situation?.checkin;
+  const parts = [], times = [];
+  if (e && sameDay(e.recorded_at, p.today)) { parts.push(t("now.energy_value", { v: num(e.value) })); times.push(e.recorded_at); }
+  if (c) { ["mind", "task"].forEach((k) => { if (c[k]) parts.push(t(`rr.${k}.${c[k]}`)); }); times.push(c.at); }
+  if (p.feel_today != null) parts.push(t(`feel.${p.feel_today}`));
+  if (!parts.length) return t("now.last_none");
+  const latest = times.sort().at(-1);
+  return latest ? t("now.last", { time: clock(latest), what: parts.join(t("ui.list_sep")) }) : t("now.last_morning", { what: parts.join(t("ui.list_sep")) });
+}
+
+function nowHtml(p) {
+  const S = p.soreness, levels = S.today ? S.levels : {};
   const askedRegions = [...new Set(S.asked.flatMap((a) => a.regions))];
   const askedHead = S.asked.map((a) => t("asked.what", { day: day(a.date), what: wtype(a.type) })).join(t("ui.list_sep"));
   const asked = askedRegions.length ? `<div class="asked"><p class="small" style="margin:0 0 var(--s-2)">${icon("exercise", 14)} ${esc(t("asked.head", { what: askedHead }))}</p>
     ${askedRegions.map((r) => `<div class="lvl-row" role="group" aria-label="${esc(t(`sore.region.${r}`))}"><span class="small">${t(`sore.region.${r}`)}</span>
-      <span class="lvl-btns">${[0, 1, 2, 3].map((lv) => `<button type="button" class="goal-btn lvl-btn" data-region="${r}" data-level="${lv}" aria-pressed="${(levels[r] || 0) === lv && S.today}">${t(`sore.level.${lv}`)}</button>`).join("")}</span></div>`).join("")}</div>` : "";
+      <span class="lvl-btns">${[0, 1, 2, 3].map((lv) => `<button type="button" class="goal-btn lvl-btn" data-region="${r}" data-level="${lv}" ${pressed((levels[r] || 0) === lv && S.today)}>${t(`sore.level.${lv}`)}</button>`).join("")}</span></div>`).join("")}</div>` : "";
   const rows = S.regions.map((r, i) => `<div class="sore-row"><span>${t(`sore.region.${r.key}`)}</span>
     <span class="xs muted">${t("sore.days", { n: r.sore_days, k: S.checked })}</span><div class="sore-strip" data-i="${i}"></div></div>`).join("");
-  return `<section class="card span-12"><h2>${t("sore.title")}<span class="aside">${t("sore.sub")}</span></h2>
-    <div class="sore-layout">
-      <div class="fig-plate">${figureSvg(p, Object.fromEntries(p.regions.map((r) => [r, fill(levels[r])])), (r) => soreLabel(r, levels[r]))}
-        <div class="legend fig-legend">${legend}</div></div>
-      <div class="sore-side">
-        <p class="lede" style="font-size:var(--t-lg);margin:0 0 4px">${esc(head)}</p>
-        <p class="small muted" style="margin:0 0 var(--s-3)">${S.latest && !S.today ? esc(t("sore.latest_was", { list: Object.keys(S.levels).length ? regionsText(S.levels) : t("sore.none_short") })) : ""}</p>
-        <div class="feel-row" role="group" aria-label="${esc(t("feel.question"))}"><span class="small">${t("feel.question")}</span>
-          ${[2, 5, 8].map((v) => `<button type="button" class="goal-btn feel-btn" data-feel="${v}" aria-pressed="${p.feel_today === v}">${t(`feel.${v}`)}</button>`).join("")}</div>
-        <div class="feel-row" role="group" aria-label="${esc(rv("energyQuestion"))}"><span class="small">${rv("energyQuestion")}</span>
-          ${[0, 1, 2, 3, 4, 5].map(v => `<button type="button" class="goal-btn energy-btn" data-energy="${v}" aria-pressed="${p.self?.date === p.day && p.self.energy === v}">${v}</button>`).join("")}</div>
-        <p class="xs muted">${rv("energyHint")}</p>
-        ${asked}
-        <p class="small" style="margin:var(--s-3) 0 var(--s-2)">${askedRegions.length ? t("sore.how_to_rest") : rv("soreOptionalHint")}</p>
-        <div class="goal-act"><button type="button" class="goal-btn primary" id="sore-save"${isStatic ? " disabled" : ""}>${t("sore.save")}</button>
-          <button type="button" class="goal-btn" id="sore-clear">${rv("confirmNoSoreness")}</button></div>
-        <p class="xs sore-msg" role="status">${isStatic ? t("sore.static") : ""}</p>
-        <h3 class="section-title" style="margin-top:var(--s-4)">${t("sore.last_days", { n: S.days })}</h3>
-        <div class="sore-rows">${rows}</div>
-        <p class="xs muted sore-key"><i></i>${t("sore.trained_key")}</p>
-      </div></div>
-    <p class="xs muted" style="margin:var(--s-3) 0 0">${t("sore.credit")}</p></section>`;
+  const c = p.restore?.situation?.checkin;
+  const choices = (field, values) => `<div class="now-row" role="group" aria-label="${esc(t(`rr.${field}`))}"><span class="small now-label">${t(`rr.${field}`)}</span>
+    <span class="now-btns">${values.map((v) => `<button type="button" class="goal-btn now-choice" data-field="${field}" data-value="${v}" ${pressed(c?.[field] === v)}>${t(`rr.${field}.${v}`)}</button>`).join("")}</span></div>`;
+  return `<section class="card span-12 rec-now" id="now"><h2>${t("now.title")}<span class="aside">${t("now.sub")}</span></h2>
+    <p class="small muted now-last">${esc(lastSaved(p))}</p>
+    <div class="now-grid"><div>
+      <div class="now-row" role="group" aria-label="${esc(t("now.energy"))}"><span class="small now-label">${t("now.energy")}</span>
+        <span class="now-btns now-scale">${Array.from({ length: 11 }, (_, v) => `<button type="button" class="goal-btn now-energy" data-energy="${v}" ${pressed(false)}>${v}</button>`).join("")}</span>
+        <span class="xs muted now-ends">${t("now.energy_ends")}</span></div>
+      <div class="now-row" role="group" aria-label="${esc(t("feel.question"))}"><span class="small now-label">${t("feel.question")}</span>
+        <span class="now-btns">${[2, 5, 8].map((v) => `<button type="button" class="goal-btn feel-btn" data-feel="${v}" ${pressed(p.feel_today === v)}>${t(`feel.${v}`)}</button>`).join("")}</span></div>
+      ${p.restore ? choices("mind", MIND) + choices("task", TASK) : ""}
+    </div><div>
+      <div class="now-row"><span class="small now-label">${t("now.sore")}</span><span class="now-sore-list">${soreList(levels, S.today)}</span></div>
+      <p class="xs muted" style="margin:0 0 var(--s-2)">${t(S.today ? "sore.head_today" : "now.sore_hint")}${S.today ? ` · ${t("now.sore_hint")}` : ""}</p>
+      ${asked}
+      <button type="button" class="goal-btn" id="sore-clear">${rv("confirmNoSoreness")}</button>
+    </div></div>
+    <div class="goal-act"><button type="button" class="goal-btn primary" id="now-save"${isStatic ? " disabled" : ""}>${t("now.save")}</button></div>
+    <p class="xs now-msg" role="status">${isStatic ? t("now.static") : ""}</p>
+    <details class="how now-history"><summary>${t("sore.last_days", { n: S.days })}</summary>
+      <div class="sore-rows">${rows}</div><p class="xs muted sore-key"><i></i>${t("sore.trained_key")}</p></details>
+    <details class="how"><summary>${t("ui.how")}</summary><p>${t("now.rule")}</p></details></section>`;
 }
 
 export default {
@@ -180,10 +165,10 @@ export default {
     return `<div class="head"><div><h1>${rv("title")}</h1><div class="sub">${rv("sub")}</div></div></div>
       ${overviewHtml(p)}
       <div class="grid">
-        ${p.restore ? `<section class="card span-12"><h2>${t("rr.mind")}</h2>${checkinHtml(p.restore, true)}<p class="small"><a href="#restore">${t("rr.choose")} →</a></p></section>` : ""}
-        <details class="card span-12 rec-checkin"><summary>${rv("editor")}</summary>${sorenessHtml(p)}</details>
+        ${nowHtml(p)}
         ${afterHtml(p)}
         ${responseHtml(p)}
+        ${p.hrv_prediction ? `<div class="span-12">${hrvModelHtml(p.hrv_prediction)}</div>` : ""}
         <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary>
           <p>${t("rec.rule_after", { good: num(p.after.rule.good, 1), low: num(p.after.rule.low, 1), n: p.after.rule.after_days })}</p>
           <p>${t("rec.rule_body", { n: p.rule.response_days, k: p.response.method.min_group_days })}</p>
@@ -191,11 +176,6 @@ export default {
       </div>`;
   },
   mount(root, p) {
-    mountRestore(root);
-    root.querySelectorAll(".bul").forEach((el) => {
-      const m = p.recovery.metrics.find((x) => x.key === el.dataset.key);
-      draw(el, (w) => bullet(m.value, m.band, { width: w, unit: m.unit, tone: m.tone }));
-    });
     mountCompare(root.querySelector("#rec-compare"), p.response.rows);
     const A = p.after, scored = A.days.filter((d) => d.score != null);
     const dotTip = (d) => [day(d.date), sessionsText(d), d.trained.length ? `${t("after.trained")} ${regionsShort(d.trained)}` : "", t("after.tip_score", { v: num(d.score, 1) })].filter(Boolean).join(" · ");
@@ -204,27 +184,24 @@ export default {
       { width: w, first: isoBack(p.day, A.rule.after_days - 1), last: p.day, band: { low: A.rule.low, high: A.rule.good }, refs: [{ value: 5, label: t("after.usual") }], fmt: (v) => num(v, Number.isInteger(v) ? 0 : 1) }));
     const S = p.soreness;
     root.querySelectorAll(".sore-strip").forEach((el) => draw(el, (w) => stripSvg(S.regions[el.dataset.i].days, w)));
-    // tap a region: none → a little → clearly → very → none; the buttons of the parts a recent workout trained set
-    // a level directly, and both stay in step
+    // soreness is chosen on the illustrated body above (a region, then a level) or with the buttons of the parts a
+    // recent workout trained; both stay in step, and nothing is saved until Save
     const levels = { ...(S.today ? S.levels : {}) };
-    const svg = root.querySelector(".sore-layout .fig");
-    let overview;
-    let sorenessChanged = S.today;
+    let overview, sorenessChanged = false;
+    const list = root.querySelector(".now-sore-list");
     const set = (r, lv) => {
       sorenessChanged = true;
       if (lv) levels[r] = lv; else delete levels[r];
-      const g = svg.querySelector(`.fig-region[data-region="${r}"]`);
-      g.style.fill = fill(lv);
-      g.setAttribute("aria-label", soreLabel(r, lv));
       root.querySelectorAll(`.lvl-btn[data-region="${r}"]`).forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.level) === (lv || 0))));
+      list.innerHTML = soreList(levels, true);
       overview?.setLevels(levels);
     };
     overview = mountOverview(root, p, { onLevel: set, openEditor() {
-      const details = root.querySelector(".rec-checkin"); details.open = true;
-      details.scrollIntoView({ behavior: "smooth", block: "start" }); details.querySelector("summary").focus();
+      const card = root.querySelector("#now");
+      card.scrollIntoView({ behavior: "smooth", block: "start" }); card.querySelector("#now-save").focus({ preventScroll: true });
     } });
-    mountFigure(svg, p, { tap: (r) => set(r, ((levels[r] || 0) + 1) % 4), tip: (r) => `${t(`sore.region.${r}`)} · ${t(`sore.level.${levels[r] || 0}`)}` });
     root.querySelectorAll(".lvl-btn").forEach((b) => { b.onclick = () => set(b.dataset.region, Number(b.dataset.level)); });
+    root.querySelector("#sore-clear").onclick = () => { Object.keys(levels).forEach((r) => set(r, 0)); sorenessChanged = true; list.innerHTML = soreList(levels, true); overview?.setLevels(levels); };
     // a training day with nothing written about what it trained: the same dialog as the prompt after a workout
     root.querySelectorAll("[data-note]").forEach((b) => {
       b.onclick = () => {
@@ -233,27 +210,44 @@ export default {
         if (s) openTrained({ figure: p.figure, regions: p.regions, words: p.words }, { ...s, date: d.date });
       };
     });
-    let feel = p.feel_today ?? null;
-    let energy = p.self?.date === p.day ? p.self.energy : null;
-    root.querySelectorAll(".energy-btn").forEach(b => { b.onclick = () => {
-      energy = Number(b.dataset.energy);
-      root.querySelectorAll(".energy-btn").forEach(x => x.setAttribute("aria-pressed", String(Number(x.dataset.energy) === energy)));
-    }; });
-    root.querySelectorAll(".feel-btn").forEach((b) => {
+    // one choice per row; pressing the chosen one again takes it back
+    const choice = { energy: null, feel: p.feel_today ?? null, mind: p.restore?.situation?.checkin?.mind ?? null, task: p.restore?.situation?.checkin?.task ?? null };
+    const start = { ...choice };
+    const toggle = (sel, key, read) => root.querySelectorAll(sel).forEach((b) => {
       b.onclick = () => {
-        feel = feel === Number(b.dataset.feel) ? null : Number(b.dataset.feel);
-        root.querySelectorAll(".feel-btn").forEach((x) => x.setAttribute("aria-pressed", String(Number(x.dataset.feel) === feel)));
+        choice[key] = choice[key] === read(b) ? null : read(b);
+        root.querySelectorAll(sel).forEach((x) => x.setAttribute("aria-pressed", String(read(x) === choice[key])));
       };
     });
-    root.querySelector("#sore-clear").onclick = () => { sorenessChanged = true; Object.keys(levels).forEach((r) => set(r, 0)); overview?.setLevels(levels); };
-    const msg = root.querySelector(".sore-msg");
-    root.querySelector("#sore-save").onclick = async () => {
+    toggle(".now-energy", "energy", (b) => Number(b.dataset.energy));
+    toggle(".feel-btn", "feel", (b) => Number(b.dataset.feel));
+    toggle('.now-choice[data-field="mind"]', "mind", (b) => b.dataset.value);
+    toggle('.now-choice[data-field="task"]', "task", (b) => b.dataset.value);
+    // a retry after a failed save reuses the request id of an unchanged answer, so nothing is written twice
+    const ids = {};
+    const once = (name, body) => { const sig = JSON.stringify(body); if (ids[name]?.sig !== sig) ids[name] = { sig, id: crypto.randomUUID() }; return { ...body, request_id: ids[name].id }; };
+    const msg = root.querySelector(".now-msg");
+    root.querySelector("#now-save").onclick = async () => {
       if (isStatic) return;
+      const feelChanged = choice.feel !== start.feel, moodChanged = choice.mind !== start.mind || choice.task !== start.task;
+      // Rest & rewards reads the body as tired, comfortable or sore: energy 3 or lower is tired, 6 or higher comfortable,
+      // and a region clearly sore or worse today is sore (docs/REST_AND_REWARDS.md)
+      const soreToday = (sorenessChanged || S.today) && Object.values(levels).some((lv) => lv >= 2);
+      const body = soreToday ? "sore" : choice.energy == null ? null : choice.energy <= 3 ? "tired" : choice.energy >= 6 ? "comfortable" : null;
+      const writes = [];
+      if (choice.energy != null) writes.push(["recovery-checkin", once("energy", { kind: "energy", region: null, value: choice.energy })]);
+      if (feelChanged || sorenessChanged) writes.push(["checkin", { date: p.today, levels: sorenessChanged ? levels : null, feel: choice.feel }]);
+      if ((body || choice.mind || choice.task) && (moodChanged || choice.energy != null || sorenessChanged))
+        writes.push(["restore", once("restore", { op: "checkin", body, mind: choice.mind, task: choice.task })]);
+      if (!writes.length) { msg.textContent = t("now.nothing"); return; }
+      const save = root.querySelector("#now-save");
+      save.disabled = true; msg.textContent = t("rr.saving");
       try {
-        await post("checkin", { date: p.today, levels: sorenessChanged ? levels : null, feel, energy });
+        for (const [name, body] of writes) await post(name, body);
         window.dispatchEvent(new HashChangeEvent("hashchange"));
       } catch (error) {
         msg.textContent = t("sore.err", { e: error.message });
+        save.disabled = false;
       }
     };
   },

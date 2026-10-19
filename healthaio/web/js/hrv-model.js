@@ -1,32 +1,8 @@
 import { esc } from "./charts.js";
-import { getLang, num, day } from "./i18n.js";
+import { day, num, t } from "./i18n.js";
 
-const words = {
-  title:["HRV · 个人训练模型","HRV · personal trained model"], ready:["下一日预测","Next-day forecast"],
-  stale_data:["等待最新数据","Awaiting fresh data"], history_only:["历史检验","Historical evaluation"],
-  insufficient_recent:["近期记录不足","Too few recent records"], not_trained:["尚未训练个人模型","Personal model not trained"],
-  invalid_model:["模型文件无法读取，请重新训练","Model unavailable; retraining needed"],
-  invalid_source:["来源有无效记录，请先核对","Invalid source records; review needed"],
-  source_changed:["训练用的旧数据已修订，请重新训练","Training data revised; retraining needed"],
-  empty:["接入 HRV 历史并完成训练后，这里显示预测与实际误差。","Train on your HRV history to see predictions and measured errors here."],
-  actual:["实际 HRV","Recorded HRV"], prediction:["模型估计","Model estimate"], baseline:["28 天中位数","28-day median"],
-  latest:["最新完整记录 · {date}","Latest complete record · {date}"], target:["{date} 的估计","Estimate for {date}"],
-  interval:["参考范围 {low}–{high} ms","Reference range {low}–{high} ms"],
-  stale:["历史估计 · 不是今天的预测","Historical estimate · not today"],
-  metric:["留出检验误差 {error} ms · 中位数基线 {base} ms","Held-out MAE {error} ms · median baseline {base} ms"],
-  counts:["本人 {n} 个次日样本 · 训练于 {date}","{n} personal next-day pairs · trained {date}"],
-  detail:["模型详情","Model details"],
-  holdout:["本轮按时间留出 {start} 至 {end}，共 {n} 天；这段未参与选参数。图为其中最近 60 个有效日。","Calendar holdout: {start}–{end}, {n} days, excluded from parameter selection. Chart: last 60 eligible holdout days."],
-  inputs_hrv:["采用 HRV 历史：近期水平、变化、波动和记录覆盖。","Uses HRV history: recent level, change, variability and coverage."],
-  inputs_context:["以 HRV 历史为主，加入此前睡眠、静息心率与活动记录。","HRV history plus previously observed sleep, resting heart rate and activity."],
-  baseline_selected:["训练候选在验证期没有胜过简单基线，当前采用验证期更稳的基线。","Trained candidates did not beat the baseline in validation; the selected baseline is active."],
-  coverage:["按更早的校准数据确定参考范围；留出期覆盖 {coverage}%。不是个人概率保证。","Range set using earlier calibration errors; holdout coverage {coverage}%. Not a personal probability guarantee."],
-  uncertainty:["与基线的误差差值：7 天分块估计区间 {low} 至 {high} ms。跨过 0 时，尚不能确认有稳定优势。","Paired error difference: 7-day block interval {low} to {high} ms. An interval crossing zero does not establish a stable advantage."],
-  boundary:["预测设备记录的日 HRV；不换算成酸痛、精力或临床恢复分，也不能说明某次行为导致了变化。","Predicts recorded daily HRV, not pain, energy or clinical recovery; it does not identify causes."],
-  old_model:["模型超过 45 天未重训；当前结果谨慎参考。","Model is over 45 days old; interpret cautiously."],
-  chart:["留出期：实际与预估（ms）","Held-out actual vs estimate (ms)"],
-};
-function w(key, data={}) { return (words[key]?.[getLang()==="zh"?0:1] || key).replace(/\{(\w+)\}/g,(_,k)=>data[k]??""); }
+// the words are in i18n.js under hm.*
+const w = (key, data = {}) => t(`hm.${key}`, data);
 const dateText = d => day(d,{weekday:false});
 
 function plot(cases) {

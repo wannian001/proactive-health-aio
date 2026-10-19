@@ -1,9 +1,37 @@
 // Exercise: this week against the weekly goal, the last 7 days against your normal, load against recovery,
-// twelve weeks by kind, and how the body tends to answer each kind the next day.
+// twelve weeks by kind, and how the body tends to answer each kind the next day; then the other half of moving,
+// long stretches at the computer (modules/sitting.py) and the short moves for them (care-ui.js).
 import { bullet, draw, esc, spark, stackedColumns } from "../charts.js";
 import { clock, day, dur, measure, num, shortDay, signed, t, weekdayShort, wtype } from "../i18n.js";
 import { STATE_ICON } from "../icons.js";
 import { mountTabs, tabs } from "./tabs.js";
+import { mountCare, routineHtml, stopLine } from "../care-ui.js";
+
+// sitting: today's longest stretch at the computer against your usual, right now if the Mac app says so, 14 days of
+// the longest stretch with the reminder line, today's long ones, and the moves (#exercise/sitting)
+function sittingHtml(S) {
+  if (!S) return "";
+  const T = S.today, R = S.rule;
+  const lede = !T ? t("sit.none_today") : S.usual != null ? t("sit.lede", { d: dur(T.longest), u: dur(S.usual) }) : t("sit.lede_no_usual", { d: dur(T.longest) });
+  const longs = T ? T.stretches.filter((x) => x.minutes >= R.long_min) : [];
+  return `<section class="card span-12" id="sitting"><h2>${t("sit.title")}<span class="aside">${t("sit.sub", { m: R.break_min })}</span></h2>
+    <p class="lede" style="font-size:var(--t-lg);margin:0 0 4px">${esc(lede)}</p>
+    ${S.live ? `<p class="small sit-live">${chip(S.live.minutes >= R.long_min ? "watch" : "", t("sit.live", { d: dur(S.live.minutes), at: clock(S.live.since) }))}</p>` : `<p class="xs muted" style="margin:0">${t("sit.no_live")}</p>`}
+    <div id="sit-days" class="chart" style="margin-top:var(--s-3)"></div>
+    ${longs.length ? `<p class="small" style="margin:var(--s-2) 0 0">${esc(t("sit.longs", { n: longs.length, m: R.long_min }))} ${longs.map((x) => `<span class="chip">${clock(x.start)}–${clock(x.end)} · ${dur(x.minutes)}</span>`).join(" ")}</p>` : ""}
+    <h3 class="section-title" style="margin-top:var(--s-4)">${t("sit.moves")}</h3>
+    <div class="routines">${S.routines.map((id) => routineHtml(id, S.info, { why: "sitting" })).join("")}</div>${stopLine(S.stop)}
+    <details class="how"><summary>${t("ui.how")}</summary><p>${t("sit.rule", { b: R.break_min, l: R.long_min, r: R.repeat_min, n: R.base_days })}</p></details></section>`;
+}
+
+function mountSitting(root, S) {
+  const box = root.querySelector("#sit-days");
+  if (!S || !box) return;
+  mountCare(root);
+  const cols = S.days.map((d) => ({ label: shortDay(d.date), values: d.longest == null ? null : { longest: d.longest },
+    tip: d.longest == null ? `${day(d.date)} · ${t("ui.no_data")}` : `${day(d.date)} · ${t("sit.tip", { d: dur(d.longest), n: d.long })}` }));
+  draw(box, (w) => stackedColumns(cols, [["longest", "var(--c-focus)"]], { width: w, height: 170, limit: S.rule.long_min, limitLabel: t("sit.limit", { m: S.rule.long_min }), labelEvery: w < 560 ? 2 : 1 }));
+}
 
 const chip = (cls, text) => `<span class="chip ${cls}">${esc(text)}</span>`;
 
@@ -72,7 +100,7 @@ export default {
   render(p) {
     const g = p.goal, w = p.week;
     if (!p.has_data) {
-      return `<div class="head"><div><h1>${t("nav.exercise")}</h1></div></div><div class="card"><div class="empty">${t("ex.empty")}</div></div>`;
+      return `<div class="head"><div><h1>${t("nav.exercise")}</h1></div></div><div class="grid"><div class="card span-12"><div class="empty">${t("ex.empty")}</div></div>${sittingHtml(p.sitting)}</div>`;
     }
     const share = Math.min(100, (w.minutes / g.weekly_min) * 100);
     const load = p.load;
@@ -92,6 +120,7 @@ export default {
           <div class="row" style="gap:6px;margin-bottom:var(--s-4)">${recovery}${chip(load.state === "high" ? "watch" : "", t(`ex.load.${load.state}`))}<span class="xs muted">${esc(loadLine)}</span></div>
           <div class="tiles aligned ex-tiles">${p.rows.map(tile).join("")}</div>
           <details class="how"><summary>${t("ui.how")}</summary><p>${t("ex.rule_tiles", { b: p.rule.baseline, k: p.rule.min_total_days })}</p><p>${t("ex.load.rule", { hi: num(load.high, 1), lo: num(load.low, 1) })}</p></details></section>
+        ${sittingHtml(p.sitting)}
         <section class="card span-12"><h2>${t("time.detail")}</h2>
           ${tabs("ex", [
             { key: "weeks", label: t("ex.weeks", { n: p.rule.weeks }), html: `<div id="exweeks" class="chart"></div><div class="legend" style="margin-top:8px">${KIND_PARTS.map(key).join("")}</div>` },
@@ -101,6 +130,7 @@ export default {
       </div>`;
   },
   mount(root, p) {
+    mountSitting(root, p.sitting);
     if (!p.has_data) return;
     mountTabs(root);
     const weeks = p.weeks.map((x) => ({

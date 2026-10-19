@@ -711,5 +711,8 @@ def generate(out: Path, today: Optional[date] = None, now: Optional[datetime] = 
     # energy said on the "How you are right now" card, kept with its time (see recovery_log)
     (out / "recovery_observations.jsonl").write_text("".join(json.dumps(r) + "\n" for r in sam.energy_ratings(report)), encoding="utf-8")
     from .config import load
+    from .modules import sitting
     sam.rest_history(load(config))
+    # Sam has been at the laptop since 17:45, as the Mac app would say: the demo opens on the sitting reminder
+    sitting.note(load(config), sam.now.replace(hour=17, minute=45), sam.now - timedelta(minutes=1))
     return config

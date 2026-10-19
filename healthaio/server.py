@@ -1,8 +1,9 @@
 """A small web server: the page files, one JSON endpoint per page, and the routes the iPhone app uses.
 
 GET/POST /api/restore serves the separate append-only restore.jsonl: feelings,
-actual activities, reflections and celebrations. The same origin/device write
-boundary as check-ins applies; it never changes measured health samples.
+actual activities, reflections and celebrations. POST /api/care appends to
+body_care.jsonl: where it feels tight and the short moves done. The same
+origin/device write boundary as check-ins applies; neither changes measured health samples.
 
 Binds to 127.0.0.1 by default. The pages only read the data; it changes by editing or importing the CSV files, or by
 a package from the paired iPhone app. The browser can write three things, and only from a page this server served
@@ -26,7 +27,7 @@ from typing import Any, Callable, Dict, Optional
 from urllib.parse import parse_qs, urlsplit
 
 from . import __version__, capture, goal_log, iphone, kit, phone, update
-from . import checkin, restore_log, recovery_log
+from . import care_log, checkin, restore_log, recovery_log
 from .config import Config
 from .context import Context
 from .modules import PAGES
@@ -234,6 +235,8 @@ def make_handler(cfg: Config, now: Callable[[], Optional[datetime]] = lambda: No
                 return self._checkin(checkin.trained_from_browser)
             if path == "/api/restore":
                 return self._checkin(restore_log.from_browser)
+            if path == "/api/care":
+                return self._checkin(care_log.from_browser)
             return self._json(404, {"error": "nothing to write here"})
 
         def _same_site(self) -> bool:

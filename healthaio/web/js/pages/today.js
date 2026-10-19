@@ -208,9 +208,19 @@ function patternLine(p) {
   return line({ key: "patterns", iconKey: "check", name: t("sum.patterns"), text: words.length ? words.join(SEP()) : t("sum.patterns_none"), href: "#followup" });
 }
 
+// the longest stretch at the computer today against your usual, or right now when the Mac app says you've sat long
+function sittingLine(p) {
+  const S = p.sitting, name = t("sum.sitting_name"), href = "#exercise/sitting";
+  if (!S || S.longest == null) return line({ key: "sitting", iconKey: "laptop", name, text: t("sum.none"), href });
+  const state = S.live && S.live.minutes >= S.long_min ? chip("watch", t("sum.sitting_now", { d: dur(S.live.minutes) }))
+    : S.usual != null && S.longest > S.usual * 1.25 ? chip("watch", t("sum.sitting_longer"))
+      : chip("", t(S.long ? "sum.sitting_long_n" : "sum.sitting_ok", { n: S.long }));
+  return line({ key: "sitting", iconKey: "laptop", name, text: t("sum.sitting_text", { d: dur(S.longest) }), state, href });
+}
+
 function linesHtml(p) {
   return `<section class="card span-12"><h2>${t("sum.title")}</h2>
-    <div class="sum-rows">${recoveryLines(p)}${exerciseLine(p)}${foodLine(p)}${screensLine(p)}${drainLine(p)}${weightLine(p)}${cardioLine(p)}${patternLine(p)}</div>
+    <div class="sum-rows">${recoveryLines(p)}${exerciseLine(p)}${sittingLine(p)}${foodLine(p)}${screensLine(p)}${drainLine(p)}${weightLine(p)}${cardioLine(p)}${patternLine(p)}</div>
     <details class="how"><summary>${t("ui.how")}</summary><p>${t("recovery.rule")}</p><p>${t("screens.rule")}</p><p>${t("sum.rule")}</p></details></section>`;
 }
 

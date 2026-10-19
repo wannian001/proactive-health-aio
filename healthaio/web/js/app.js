@@ -15,6 +15,7 @@ import load from "./pages/load.js";
 import recovery from "./pages/recovery.js";
 import restore from "./pages/restore.js";
 import { quietSuggestion } from "./restore-ui.js";
+import { startNudges } from "./nudge.js";
 import food from "./pages/food.js";
 import goals from "./pages/goals.js";
 import guide from "./pages/guide.js";
@@ -161,6 +162,8 @@ function header(active) {
   };
 }
 
+let askNudge = null;  // the sitting reminder: asked on every page and every two minutes (nudge.js)
+
 async function route(event) {
   // #page, #page/date, #page/part or #page/date/part: a part is a place on the page (#recovery/now, the "How you are
   // right now" card; #recovery/drain, Wear and tear), scrolled to once the page is drawn
@@ -183,6 +186,7 @@ async function route(event) {
     mountUpdate(main);
     PAGES[page].mount?.(main, data);
     if (focus) main.querySelector(`#${focus}`)?.scrollIntoView({ block: "start" });
+    askNudge?.();
     if (event?.type === "healthaio:restore-saved") {
       const { op, ref } = event.detail;
       const selector = op === "start" ? ".rr-current h3" :
@@ -218,6 +222,7 @@ async function start() {
   window.addEventListener("hashchange", route);
   window.addEventListener("healthaio:restore-saved", route);
   route();
+  askNudge = startNudges();
 }
 
 start();

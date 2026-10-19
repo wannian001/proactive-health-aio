@@ -88,8 +88,9 @@ export function openTrained(info, s, done = refresh) {
 // the prompt in the corner, on every page but the reading ones (info: the "prompt" payload)
 const READING = ["project", "guide", "kit"];
 export function mountPrompt(info, page) {
-  document.querySelector(".pop")?.remove();
+  document.querySelector(".pop:not(.nudge-pop)")?.remove();
   const s = info?.session;
+  if (document.querySelector(".nudge-pop")) return;  // the sitting reminder has the corner; this one comes back on the next page
   if (!s || READING.includes(page) || read(sessionStorage, LATER) === s.start || (isStatic && read(localStorage, SKIPPED) === s.start)) return;
   const pop = document.createElement("aside");
   pop.className = "pop";

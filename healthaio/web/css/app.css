@@ -959,3 +959,17 @@ main > .subnav a { flex: none; white-space: nowrap; }
 .rr-tried th:not(:first-child), .rr-tried td:not(:first-child) { text-align: right; width: 18%; }
 .rr-tried .rr-glyph { width: 28px; height: 28px; }
 .rr-tried-detail { margin-top: var(--s-3); }
+
+/* Short moves (care-ui.js): the sitting card, the reminder in the corner, the check-in's moves */
+.routines { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s-3); }
+.routine { display: grid; gap: 6px; align-content: start; padding: var(--s-4); border-radius: var(--r-md); background: var(--surface-2); }
+.routine-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.routine p { margin: 0; color: var(--ink-2); line-height: 1.5; }
+.routine .goal-btn { justify-self: start; display: inline-flex; align-items: center; gap: 6px; }
+.routine .goal-btn.done { color: var(--good-ink); }
+.routine-compact { padding: var(--s-3); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+.care-stop { margin: var(--s-3) 0 0; }
+.nudge-pop .pop-icon { color: var(--accent); }
+.sit-live { margin: 0; }
+.care-stop-fold summary { cursor: pointer; color: var(--ink-3); }
+.care-stop-fold p { margin: 4px 0 0; }

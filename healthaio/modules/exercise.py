@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional
 from .. import config as config_mod
 from .. import stats
 from ..context import Context, iso
+from . import sitting
 from . import plans
 from .week import monday
 
@@ -260,6 +261,7 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
         "recovery": {"verdict": recovery["verdict"], "as_of": recovery["as_of"],
                      "worse": [m["key"] for m in recovery["metrics"] if m["tone"] == "bad"]},
         "advice": advice, "response": response, "recent": recent,
+        "sitting": sitting.build(ctx, picked),  # long stretches at the computer, the other half of moving (modules/sitting.py)
         "has_data": bool(minutes) or bool(workouts),
         "rule": {"window": WINDOW, "baseline": BASELINE, "min_total_days": MIN_TOTAL_DAYS, "weeks": WEEKS,
                  "response_days": RESPONSE_DAYS, "min_response": MIN_RESPONSE},

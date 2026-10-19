@@ -114,6 +114,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("regions", nargs="*", metavar="REGION", help="head, torso, pelvis, left_upper_arm, ...; none given = from the note's words")
     p.add_argument("--start", required=True, help="the workout's start, YYYY-MM-DDTHH:MM, as in workouts.csv")
     p.add_argument("--note", help="what you trained, in your own words")
+    p = sub.add_parser("sitting", help="for the Mac app: the stretch at the computer going on now, or a break; prints the reminder as JSON")
+    p.add_argument("--since", help="when the current stretch started (keyboard or mouse in use since), YYYY-MM-DDTHH:MM[:SS][+zone]")
+    p.add_argument("--off", action="store_true", help="a break: nothing going on at the computer")
+    p.add_argument("--now")
     p = sub.add_parser("pair", help="open an 8-digit code (10 minutes) for the iPhone app")
     p.add_argument("--port", type=int, default=8790, help="the port `serve --lan` listens on")
     p.add_argument("--json", action="store_true")
@@ -184,6 +188,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "trained":
         from . import checkin
         return checkin.run_trained(args, cfg)
+    if args.command == "sitting":
+        from .context import Context
+        from .modules import sitting
+        if args.off:
+            sitting.note(cfg, None)
+        elif args.since:
+            since = datetime.fromisoformat(args.since)
+            sitting.note(cfg, since, _now(args) or datetime.now(since.tzinfo))
+        print(json.dumps(sitting.nudge(Context(cfg, now=_now(args))), ensure_ascii=False))
+        return 0
     done = _phone_commands(args, cfg)
     if done is not None:
         return done

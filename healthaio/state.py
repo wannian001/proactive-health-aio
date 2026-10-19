@@ -2,7 +2,8 @@
 
 ``.healthaio/`` sits next to ``healthaio.toml``. It holds the paired devices (token hashes only), an open pairing
 code, every package the phone sent and what happened to it, the last automatic collection, the last iPhone app
-renewal and the last update check. Nothing in it is read by the pages; deleting it unpairs every device.
+renewal and the last update check, and what the Mac app last saw at the keyboard (sitting.json, read by the sitting
+reminder). Deleting it unpairs every device.
 """
 import json
 import os

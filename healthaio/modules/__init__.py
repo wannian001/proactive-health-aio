@@ -3,7 +3,8 @@ from datetime import timedelta
 from typing import Any, Callable, Dict, List, Optional
 
 from ..context import Context
-from . import body, data, docs, drain, exercise, followup, food, goals, load, recovery, restore, sleep, time, today, week
+from .. import routines
+from . import body, data, docs, drain, exercise, followup, food, goals, load, recovery, restore, sitting, sleep, time, today, week
 
 PAGES: Dict[str, Callable[..., Dict[str, Any]]] = {
     "today": lambda ctx, param=None: today.build(ctx, day=param),
@@ -14,6 +15,10 @@ PAGES: Dict[str, Callable[..., Dict[str, Any]]] = {
     "restore": lambda ctx, param=None: restore.build(ctx),
     # not a page: what every page asks after a strength or hard workout (the popup; modules/recovery.py)
     "prompt": lambda ctx, param=None: recovery.prompt(ctx),
+    # not pages either: the reminder after a long stretch at the computer (modules/sitting.py), and the short moves it
+    # and the "where it's tight" check-in hand you (routines.py), which the Mac app reads too
+    "nudge": lambda ctx, param=None: sitting.nudge(ctx),
+    "routines": lambda ctx, param=None: routines.payload(),
     "load": lambda ctx, param=None: load.build(ctx, day=param),
     "time": lambda ctx, param=None: time.build(ctx, day=param),
     "drain": lambda ctx, param=None: drain.build(ctx, day=param),

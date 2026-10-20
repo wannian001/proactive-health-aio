@@ -2,11 +2,12 @@
 // of each piece of advice; and, for advice that keeps not happening, other ways to do it with the person's own
 // numbers instead of the same reminder again; and "tomorrow will be better": what has gone with a better next day
 // (the list that used to be on Weekly review). The rules are in modules/followup.py.
-import { draw, esc } from "../charts.js?v=93bad7f144";
-import { clock, day, dur, num, shortDay, t } from "../i18n.js?v=93bad7f144";
-import { COLOR, icon, STATE_ICON } from "../icons.js?v=93bad7f144";
-import { effectsHtml, mountEffects } from "./effects.js?v=93bad7f144";
-import { TODO_ICON, todoTitle } from "./today.js?v=93bad7f144";
+import { draw, esc } from "../charts.js?v=51ede4cbfe";
+import { clock, day, dur, num, shortDay, t } from "../i18n.js?v=51ede4cbfe";
+import { COLOR, icon, STATE_ICON } from "../icons.js?v=51ede4cbfe";
+import { effectsHtml, mountEffects, mountResponses, screenResponseHtml, trainingResponseHtml } from "./effects.js?v=51ede4cbfe";
+import { TODO_ICON, todoTitle } from "./today.js?v=51ede4cbfe";
+import { activeHtml, mountRestore, triedHtml } from "../restore-ui.js?v=51ede4cbfe";
 
 const hours = (h) => num(h, Number.isInteger(h) ? 0 : 1);
 
@@ -106,15 +107,18 @@ export default {
   render(p) {
     return `<div class="head"><div><h1>${t("nav.followup")}</h1><div class="sub">${t("fu.sub")}</div></div></div>
       <div class="grid">
+        ${p.restore ? `<section class="card span-12">${activeHtml(p.restore)}${triedHtml(p.restore)}<p class="small"><a href="#restore">${t("nav.restore")} →</a></p></section>` : ""}
         ${yesterdayHtml(p)}
         ${waysHtml(p)}
         ${daysHtml(p)}
-        <section class="card span-12" id="better">${effectsHtml(p.effects)}</section>
+        <section class="card span-12" id="better">${effectsHtml(p.effects)}${trainingResponseHtml(p.training_response, p.training_days)}${screenResponseHtml(p.screen_response)}</section>
         <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary><p>${t("fu.rule")}</p></details></section>
       </div>`;
   },
   mount(root, p) {
+    mountRestore(root);
     mountEffects(root, p.effects);
+    mountResponses(root, p.training_response, p.screen_response);
     root.querySelectorAll(".fu-row .goal-dots").forEach((el) => { const r = p.rows[el.dataset.i]; draw(el, (w) => adviceDots(fortnight(p, r), { width: w })); });
   },
 };

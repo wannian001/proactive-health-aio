@@ -1,11 +1,13 @@
 // Today: one card for the morning (the day ring, how recovered you are, what is on, tonight, and what to adjust), then
 // every other part of your health in one line each. Numbers and a state only: the sentences that explain them live on
 // each part's own page, one click away, so a first look takes seconds.
-import { dayRing, draw, esc, RING_CATS, spark } from "../charts.js?v=93bad7f144";
-import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js?v=93bad7f144";
-import { COLOR, icon, STATE_ICON } from "../icons.js?v=93bad7f144";
-import { worseLine } from "./drain.js?v=93bad7f144";
-import { helping } from "./effects.js?v=93bad7f144";
+import { dayRing, draw, esc, RING_CATS, spark } from "../charts.js?v=51ede4cbfe";
+import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js?v=51ede4cbfe";
+import { COLOR, icon, STATE_ICON } from "../icons.js?v=51ede4cbfe";
+import { worseLine } from "./drain.js?v=51ede4cbfe";
+import { helping } from "./effects.js?v=51ede4cbfe";
+import { nowItem, nowLine, quietSuggestion, rhythmItem } from "../restore-ui.js?v=51ede4cbfe";
+import { askHtml, mountAsk } from "../care-ui.js?v=51ede4cbfe";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const chip = (cls, text, glyph = "") => `<span class="chip ${cls}">${glyph}${esc(text)}</span>`;
@@ -84,22 +86,25 @@ function todoWhy(x) {
   }
 }
 
+// what to adjust today, opened by what Rest & rewards says right now (if anything): that line is about this moment,
+// so it is not one of the three
 function todoHtml(p) {
-  const a = p.actions;
-  if (!a) return "";
-  const body = a.steady ? `<p class="lede" style="font-size:var(--t-lg);margin:0">${t("todo.steady")}</p>`
+  const a = p.actions, now = nowItem(p.restore) + rhythmItem(p.rhythm);
+  if ((!a || (!a.steady && !a.items.length)) && !now) return "";
+  const body = !a || (!a.steady && !a.items.length) ? "" : a.steady ? `<p class="lede" style="font-size:var(--t-lg);margin:0">${t("todo.steady")}</p>`
     : `<ol class="todo">${a.items.map((x) => `<li><a class="todo-item" href="${x.link}">
         <span class="todo-icon" style="color:${COLOR[TODO_ICON[x.domain]] || "var(--ink-2)"}">${icon(TODO_ICON[x.domain], 20)}</span>
         <span class="todo-body"><b>${esc(todoTitle(x))}</b><span class="small muted">${esc(todoWhy(x))}</span></span></a></li>`).join("")}</ol>`;
-  return `<div class="today-todo"><h2 class="section-title">${t("todo.title")}</h2>${body}
+  return `<div class="today-todo"><h2 class="section-title">${t("todo.title")}</h2>${now}${body}
     <p class="small today-followup"><a href="#followup">${t("fu.today_link")} ›</a></p>
     <details class="how"><summary>${t("ui.how")}</summary><p>${t("todo.rule")}</p></details></div>`;
 }
 
 function morningHtml(p) {
   const r = p.recovery;
-  const self = p.self && (p.self.energy != null || p.self.focus != null || p.self.feel != null)
-    ? `<p class="small muted" style="margin:0">${esc(t("self.title"))}${t("today.colon")}${esc([p.self.feel != null ? t("self.feel", { v: t(`feel.${p.self.feel}`) }) : "", p.self.energy != null ? t("self.energy", { v: num(p.self.energy) }) : "", p.self.focus != null ? t("self.focus", { v: num(p.self.focus) }) : ""].filter(Boolean).join(SEP()))}</p>` : "";
+  const S = p.self, energy = S?.energy_now ? t("now.energy_value", { v: num(S.energy_now.value) }) : S?.energy != null ? t("self.energy", { v: num(S.energy) }) : "";
+  const self = S && (energy || S.focus != null || S.feel != null)
+    ? `<p class="small muted" style="margin:0">${esc(t("self.title"))}${t("today.colon")}${esc([S.feel != null ? t("self.feel", { v: t(`feel.${S.feel}`) }) : "", energy, S.focus != null ? t("self.focus", { v: num(S.focus) }) : ""].filter(Boolean).join(SEP()))}</p>` : "";
   const behind = r.days_behind > 1 ? `<p class="chip watch" style="height:auto;padding:4px 10px;white-space:normal">${t("recovery.behind", { n: r.days_behind, day: day(r.as_of) })}</p>` : "";
   const legend = `<div class="legend">
     <span class="key"><i style="background:var(--c-sleep)"></i>${t("ring.sleep")}</span>
@@ -110,7 +115,7 @@ function morningHtml(p) {
     <div class="ring-wrap"><div id="ring" style="width:100%;max-width:360px"></div>${legend}</div>
     <div class="stack" style="gap:var(--s-5)">
       <div class="verdict"><span class="eyebrow" ${r.as_of ? `title="${esc(t("recovery.as_of", { day: day(r.as_of) }))}"` : ""}>${t("recovery.eyebrow")}</span>
-        <p class="lede" style="font-size:var(--t-3xl);margin:0">${t(`recovery.${r.verdict}`)}</p>${self}${behind}</div>
+        <p class="lede" style="font-size:var(--t-3xl);margin:0">${t(`recovery.${r.verdict}`)}</p>${self}${nowLine(p.restore)}${askHtml(p.care_ask)}${behind}</div>
       <div><h2 class="section-title">${t("today.title")}</h2>${dayLines(p)}${tonightHtml(p)}</div>
     </div></div>${todoHtml(p)}</section>`;
 }
@@ -173,8 +178,8 @@ function screensLine(p) {
 
 function drainLine(p) {
   const d = p.drain;
-  // the Wear and tear page (#drain) for the same 7 days as this line (the latest window when this is today)
-  const more = p.looking_back ? `#drain/${d.window.to}` : "#drain";
+  // Wear and tear, at the end of Recovery, for the same 7 days as this line (the latest window when this is today)
+  const more = p.looking_back ? `#recovery/${d.window.to}/drain` : "#recovery/drain";
   const state = d.strain ? chip("watch", t("sum.strain")) : d.worse.length ? chip("bad", t("sum.drain_n", { n: d.worse.length }), STATE_ICON.bad) : d.compared ? chip("good", t("sum.drain_ok"), STATE_ICON.good) : "";
   return line({ key: "drain", iconKey: "battery", name: t("sum.drain_name"), text: worseLine(d.worse, d.compared, d.signals), state, href: more });
 }
@@ -204,9 +209,19 @@ function patternLine(p) {
   return line({ key: "patterns", iconKey: "check", name: t("sum.patterns"), text: words.length ? words.join(SEP()) : t("sum.patterns_none"), href: "#followup" });
 }
 
+// the longest stretch at the computer today against your usual, or right now when the Mac app says you've sat long
+function sittingLine(p) {
+  const S = p.sitting, name = t("sum.sitting_name"), href = "#exercise/sitting";
+  if (!S || S.longest == null) return line({ key: "sitting", iconKey: "laptop", name, text: t("sum.none"), href });
+  const state = S.live && S.live.minutes >= S.long_min ? chip("watch", t("sum.sitting_now", { d: dur(S.live.minutes) }))
+    : S.usual != null && S.longest > S.usual * 1.25 ? chip("watch", t("sum.sitting_longer"))
+      : chip("", t(S.long ? "sum.sitting_long_n" : "sum.sitting_ok", { n: S.long }));
+  return line({ key: "sitting", iconKey: "laptop", name, text: t("sum.sitting_text", { d: dur(S.longest) }), state, href });
+}
+
 function linesHtml(p) {
   return `<section class="card span-12"><h2>${t("sum.title")}</h2>
-    <div class="sum-rows">${recoveryLines(p)}${exerciseLine(p)}${foodLine(p)}${screensLine(p)}${drainLine(p)}${weightLine(p)}${cardioLine(p)}${patternLine(p)}</div>
+    <div class="sum-rows">${recoveryLines(p)}${exerciseLine(p)}${sittingLine(p)}${foodLine(p)}${screensLine(p)}${drainLine(p)}${weightLine(p)}${cardioLine(p)}${patternLine(p)}</div>
     <details class="how"><summary>${t("ui.how")}</summary><p>${t("recovery.rule")}</p><p>${t("screens.rule")}</p><p>${t("sum.rule")}</p></details></section>`;
 }
 
@@ -215,11 +230,18 @@ export default {
     const prev = shiftDay(p.day, -1), next = shiftDay(p.day, 1);
     const stepper = `<div class="stepper"><a href="#today/${prev}">‹ ${t("ui.prev_day")}</a>
       ${p.looking_back ? `<a href="${next === p.today ? "#today" : `#today/${next}`}">${t("ui.next_day")} ›</a><a href="#today">${t("ui.back_today")}</a>` : `<span aria-disabled="true">${t("ui.next_day")} ›</span>`}</div>`;
+    // when Rest & rewards says to go easy, today's adjustments drop the ones that add training; while you are resting,
+    // absorbed or asked for quiet, they wait
+    const restore = p.restore;
+    const gentle = restore && ["reported", "gentler", "signals", "trend"].includes(restore.situation.key);
+    const actions = gentle && p.actions ? { ...p.actions, items: p.actions.items.filter((x) => !["move", "strength"].includes(x.key)) } : p.actions;
+    const daily = { ...p, actions: quietSuggestion(restore) ? null : actions };
     return `<div class="head"><div><h1>${p.looking_back ? t("today.looking_back", { day: day(p.day) }) : t("today.title")}</h1>
       <div class="sub">${day(p.day)}</div></div>${stepper}</div>
-      <div class="grid">${morningHtml(p)}${linesHtml(p)}</div>`;
+      <div class="grid">${morningHtml(daily)}${linesHtml(p)}</div>`;
   },
   mount(root, p) {
+    mountAsk(root);
     const ringBox = root.querySelector("#ring");
     const now = p.ring.now ? clock(p.ring.now) : clock(p.ring.sleep?.end);
     draw(ringBox, (w) => dayRing(p.ring, { size: Math.max(260, Math.min(360, w)), center: now, centerSub: p.ring.now ? t("ring.now") : day(p.day) }));

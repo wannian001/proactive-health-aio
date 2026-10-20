@@ -1,44 +1,51 @@
 // Shell: the menu (a left sidebar that folds to icons, a bottom tab bar on phones), language and light/dark,
 // hash routing (#today, #today/2026-10-11).
-import { get, isStatic } from "./api.js?v=93bad7f144";
-import { installTooltip, esc, setFormat } from "./charts.js?v=93bad7f144";
-import { getLang, setLang, t, clock, dur, measure, shortDay, toDate, wtype } from "./i18n.js?v=93bad7f144";
-import { icon } from "./icons.js?v=93bad7f144";
-import { mountPrompt } from "./trained.js?v=93bad7f144";
-import { loadUpdate, mountUpdate, updateNote } from "./update.js?v=93bad7f144";
-import body from "./pages/body.js?v=93bad7f144";
-import data from "./pages/data.js?v=93bad7f144";
-import drain from "./pages/drain.js?v=93bad7f144";
-import exercise from "./pages/exercise.js?v=93bad7f144";
-import followup from "./pages/followup.js?v=93bad7f144";
-import load from "./pages/load.js?v=93bad7f144";
-import recovery from "./pages/recovery.js?v=93bad7f144";
-import food from "./pages/food.js?v=93bad7f144";
-import goals from "./pages/goals.js?v=93bad7f144";
-import guide from "./pages/guide.js?v=93bad7f144";
-import kit from "./pages/kit.js?v=93bad7f144";
-import project from "./pages/project.js?v=93bad7f144";
-import sleep from "./pages/sleep.js?v=93bad7f144";
-import time from "./pages/time.js?v=93bad7f144";
-import today from "./pages/today.js?v=93bad7f144";
-import week from "./pages/week.js?v=93bad7f144";
+import { get, isStatic } from "./api.js?v=51ede4cbfe";
+import { installTooltip, esc, setFormat } from "./charts.js?v=51ede4cbfe";
+import { getLang, setLang, t, clock, dur, measure, shortDay, toDate, wtype } from "./i18n.js?v=51ede4cbfe";
+import { icon } from "./icons.js?v=51ede4cbfe";
+import { mountPrompt } from "./trained.js?v=51ede4cbfe";
+import { loadUpdate, mountUpdate, updateNote } from "./update.js?v=51ede4cbfe";
+import body from "./pages/body.js?v=51ede4cbfe";
+import data from "./pages/data.js?v=51ede4cbfe";
+import drain from "./pages/drain.js?v=51ede4cbfe";
+import exercise from "./pages/exercise.js?v=51ede4cbfe";
+import followup from "./pages/followup.js?v=51ede4cbfe";
+import load from "./pages/load.js?v=51ede4cbfe";
+import recovery from "./pages/recovery.js?v=51ede4cbfe";
+import restore from "./pages/restore.js?v=51ede4cbfe";
+import { quietSuggestion } from "./restore-ui.js?v=51ede4cbfe";
+import { startNudges } from "./nudge.js?v=51ede4cbfe";
+import { mountInfo } from "./info.js?v=51ede4cbfe";
+import food from "./pages/food.js?v=51ede4cbfe";
+import goals from "./pages/goals.js?v=51ede4cbfe";
+import guide from "./pages/guide.js?v=51ede4cbfe";
+import kit from "./pages/kit.js?v=51ede4cbfe";
+import project from "./pages/project.js?v=51ede4cbfe";
+import sleep from "./pages/sleep.js?v=51ede4cbfe";
+import time from "./pages/time.js?v=51ede4cbfe";
+import today from "./pages/today.js?v=51ede4cbfe";
+import week from "./pages/week.js?v=51ede4cbfe";
 
 // the design kit gallery (#kit) is a page but not a menu item: the footer of every page and the Data page link to it
-const PAGES = { today, week, body, recovery, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };
+const PAGES = { today, week, body, recovery, restore, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };
 // the menu is one axis, the loop of managing your health, one question per item: how am I today and what do I
-// change (Today); what is my body showing, the outcomes (Body signals: recovery, sleep, drain, weight); what do I do every day,
-// the causes I control (Daily life: exercise, food, stimulation); and what have I planned and did it happen (Plans &
-// follow-up: the week on the calendar, how heavy the weeks are for body and mind, the goals, and whether yesterday's
-// advice happened and helped, "tomorrow will be better"). Schedule and Actions & goals were one question asked
-// twice (a plan, and whether it held), so they are one item. Weekly review was folded into Follow-up; where the
-// numbers come from (Data sources) sits under the menu with the reading pages, since it is not a step of the loop.
+// change (Today); what is my body showing, the outcomes (Body signals: recovery with its long view, sleep, weight);
+// what do I do every day, the causes I control (Daily life: exercise, food, stimulation, rest & rewards); and what
+// have I planned and did it happen (Plans & follow-up: the schedule and how heavy the weeks are for body and mind, the
+// goals, and whether yesterday's advice happened and what tends to make tomorrow better). Pages that answered the
+// same question twice were folded into one (see MOVED). Where the numbers come from (Data sources) sits under the
+// menu with the reading pages, since it is not a step of the loop.
 const NAV = ["today", "body", "life", "plans"];
 // a menu item that holds several pages shows a small switch above the page title and opens on its first page
 const GROUPS = {
-  body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["drain", "nav.drain"], ["body", "nav.weight_tab"]],
-  life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"]],
-  plans: [["week", "nav.schedule_week"], ["load", "nav.load_tab"], ["goals", "nav.goals"], ["followup", "nav.followup"]],
+  body: [["recovery", "nav.recovery"], ["sleep", "nav.sleep_tab"], ["body", "nav.weight_tab"]],
+  life: [["exercise", "nav.exercise"], ["food", "nav.food"], ["time", "nav.time_tab"], ["restore", "nav.restore"]],
+  plans: [["week", "nav.schedule_week"], ["goals", "nav.goals"], ["followup", "nav.followup"]],
 };
+// pages that became a part of another one: Wear and tear is the end of Recovery, Body & mind load is part of
+// Schedule & load, the Guide is the end of the Overview. An old link lands on the part (a date stays a date).
+const MOVED = { drain: (d) => (d ? `recovery/${d}/drain` : "recovery/drain"), load: (d) => (d ? `week/${d}` : "week"), guide: () => "project/guide" };
 const groupOf = (page) => Object.keys(GROUPS).find((g) => GROUPS[g].some(([p]) => p === page)) || page;
 // a page inside a group is titled by its own tab (Weight, Sleep), not by the group
 const titleKey = (page) => (GROUPS[groupOf(page)] || []).find(([p]) => p === page)?.[1] || `nav.${page}`;
@@ -49,8 +56,8 @@ const NAV_ICON = { today: "sun", body: "heart", life: "walk", plans: "calendar" 
 // to use the app, and how the personal system it comes from changed over a year. History is on the author's own site
 // (it quotes that personal system), so it is a link out, in a new tab. On a phone they are small links in the top
 // row, so the tab bar keeps the four items of the loop.
-const DOCS = ["data", "project", "guide", "history"];
-const DOC_ICON = { data: "database", project: "info", guide: "communication", history: "clock" };
+const DOCS = ["data", "project", "history"];
+const DOC_ICON = { data: "database", project: "info", history: "clock" };
 const OUTSIDE = { history: "doc.history_url" };  // the i18n key of its address (one page per language)
 const docAttrs = (p) => (OUTSIDE[p] ? `href="${esc(t(OUTSIDE[p]))}" target="_blank" rel="noopener"` : `href="#${p}"`);
 const docName = (p) => `${t(`nav.${p}`)}${OUTSIDE[p] ? " ↗" : ""}`;
@@ -156,9 +163,16 @@ function header(active) {
   };
 }
 
-async function route() {
-  const [raw, param] = (location.hash.replace(/^#/, "") || "today").split("/");
+let askNudge = null;  // the sitting reminder: asked on every page and every two minutes (nudge.js)
+
+async function route(event) {
+  // #page, #page/date, #page/part or #page/date/part: a part is a place on the page (#recovery/now, the "How you are
+  // right now" card; #recovery/drain, Wear and tear), scrolled to once the page is drawn
+  const [raw, ...more] = (location.hash.replace(/^#/, "") || "today").split("/");
+  const isDate = (x) => /^\d{4}-\d{2}-\d{2}$/.test(x);
+  const param = more.find(isDate), focus = more.find((x) => x && !isDate(x));
   if (OUTSIDE[raw]) { location.replace(t(OUTSIDE[raw])); return; }  // an old #history link: the page moved to the author's site
+  if (MOVED[raw]) { location.replace(`#${MOVED[raw](param)}`); return; }
   const name = ALIAS[raw] || raw;
   const page = PAGES[name] ? name : "today";
   header(page);
@@ -172,7 +186,25 @@ async function route() {
     main.innerHTML = updateNote() + sub + PAGES[page].render(data) + footer();
     mountUpdate(main);
     PAGES[page].mount?.(main, data);
-    get("prompt").then((info) => mountPrompt(info, page), () => mountPrompt(null));  // after a strength or hard workout: what did it train?
+    mountInfo(main);  // "how it's worked out" as an i on each card (info.js)
+    if (focus) main.querySelector(`#${focus}`)?.scrollIntoView({ block: "start" });
+    askNudge?.();
+    if (event?.type === "healthaio:restore-saved") {
+      const { op, ref } = event.detail;
+      const selector = op === "start" ? ".rr-current h3" :
+        ["finish", "cancel", "feedback"].includes(op) ? `[data-rr-session="${ref}"] h3` :
+        op.startsWith("reward_") ? ".rr-rewards-layout h2" : "#rr-next-title";
+      const target = main.querySelector(selector) || main.querySelector("h1");
+      if (target) { target.setAttribute("tabindex", "-1"); target.focus(); }
+    }
+    // Recovery choices, an activity in progress and an explicit quiet interval also
+    // silence the existing workout-note popup across the app's other pages.
+    if (page === "restore" || DOCS.includes(page) || page === "kit") mountPrompt(null);
+    else Promise.resolve(data.restore || get("restore")).then((rest) => {
+      if (shown !== page) return;
+      if (quietSuggestion(rest)) mountPrompt(null);
+      else get("prompt").then((info) => { if (shown === page) mountPrompt(info, page); }, () => mountPrompt(null));
+    }, () => mountPrompt(null));
   } catch (error) {
     const staticGap = isStatic && /^404/.test(error.message);  // the demo site only has a few pre-rendered dates
     main.innerHTML = `<div class="card"><p class="lede">${t(staticGap ? "ui.static_gap" : "ui.error")}</p><p class="muted small">${t(staticGap ? "ui.static_gap_hint" : "ui.error_hint")}</p>
@@ -190,7 +222,9 @@ async function start() {
   applyLook();
   installTooltip();
   window.addEventListener("hashchange", route);
+  window.addEventListener("healthaio:restore-saved", route);
   route();
+  askNudge = startNudges();
 }
 
 start();

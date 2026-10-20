@@ -4,11 +4,11 @@
 // themselves. Saved into workout_notes.csv (POST /api/trained); the next mornings' check-in asks about those parts.
 // "Not this time" saves an empty row, so the prompt does not come back on another device; the × only hides it until
 // the app is opened again. The reading pages (Overview, Guide, the kit gallery) do not show it.
-import { isStatic, post } from "./api.js?v=93bad7f144";
-import { esc } from "./charts.js?v=93bad7f144";
-import { figureSvg, mountFigure, regionsIn } from "./figure.js?v=93bad7f144";
-import { clock, day, dur, num, t, toDate, wtype } from "./i18n.js?v=93bad7f144";
-import { icon } from "./icons.js?v=93bad7f144";
+import { isStatic, post } from "./api.js?v=51ede4cbfe";
+import { esc } from "./charts.js?v=51ede4cbfe";
+import { figureSvg, mountFigure, regionsIn } from "./figure.js?v=51ede4cbfe";
+import { clock, day, dur, num, t, toDate, wtype } from "./i18n.js?v=51ede4cbfe";
+import { icon } from "./icons.js?v=51ede4cbfe";
 
 const SKIPPED = "healthaio.trained.skipped";  // the static demo cannot save: "Not this time" is remembered here
 const LATER = "healthaio.trained.later";      // × : hidden until the app is opened again (this tab only)
@@ -88,8 +88,9 @@ export function openTrained(info, s, done = refresh) {
 // the prompt in the corner, on every page but the reading ones (info: the "prompt" payload)
 const READING = ["project", "guide", "kit"];
 export function mountPrompt(info, page) {
-  document.querySelector(".pop")?.remove();
+  document.querySelector(".pop:not(.nudge-pop)")?.remove();
   const s = info?.session;
+  if (document.querySelector(".nudge-pop")) return;  // the sitting reminder has the corner; this one comes back on the next page
   if (!s || READING.includes(page) || read(sessionStorage, LATER) === s.start || (isStatic && read(localStorage, SKIPPED) === s.start)) return;
   const pop = document.createElement("aside");
   pop.className = "pop";

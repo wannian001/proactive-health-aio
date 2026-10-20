@@ -65,12 +65,13 @@
   --c-grid: rgba(22, 22, 22, .07);
   --c-axis: rgba(22, 22, 22, .22);
   --c-mark: #161616;
-  /* soreness, 1 a little to 3 very: one hue getting stronger, the same in both modes; the body figure's plate and
+  /* soreness, 1 a little to 3 very: one yellow getting stronger, the same in both modes; the body figure's plate and
      its line art follow the mode */
   --c-sore-0: #e5e5ea;        /* a region with nothing sore, on the plate */
-  --c-sore-1: #f6c1cf;
-  --c-sore-2: #ec6f8d;
-  --c-sore-3: #c81d4b;
+  --c-sore-1: #f8dd8b;
+  --c-sore-2: #eeb947;
+  --c-sore-3: #d99519;
+  --c-estimate: #b4a0ed;      /* how far ahead an estimate reaches (the Recovery gauges' outer ring), both modes */
   --plate: #ffffff;           /* the body figure's plate */
   --plate-ink: #3a3a3c;       /* the figure's line art and labels on the plate */
 

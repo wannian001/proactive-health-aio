@@ -1,8 +1,9 @@
-// Wear and tear (#drain): seven quiet signals over the last 7 days, in three groups (what the body already shows,
-// sleep timing, screen habits), each against your normal and, where set, your plan.
+// Wear and tear: seven quiet signals over the last 7 days, in three groups (what the body already shows, sleep timing,
+// screen habits), each against your normal and, where set, your plan. Drawn as the long-term section at the end of
+// Recovery (#recovery/drain); #drain still renders it alone, for old links and the tests.
 // No total score: the signals have different units and different strength of evidence.
-import { draw, esc, legendKey, rangeStrip, trendLine } from "../charts.js?v=93bad7f144";
-import { day, dur, inSentence, num, shortDay, t } from "../i18n.js?v=93bad7f144";
+import { draw, esc, legendKey, rangeStrip, trendLine } from "../charts.js?v=51ede4cbfe";
+import { day, dur, inSentence, num, shortDay, t } from "../i18n.js?v=51ede4cbfe";
 
 const STATUS = { bad: "bad", good: "good", neutral: "" };
 const clockOf = (noon) => { const m = ((Math.round(noon + 720) % 1440) + 1440) % 1440; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };
@@ -71,12 +72,19 @@ export function planLine(rows) {
 
 export default {
   render(p) {
+    const later = p.next === p.latest ? "#drain" : `#drain/${p.next}`;
+    const stepper = `<div class="stepper"><a href="#drain/${p.prev}">‹ ${t("drain.prev")}</a>${p.next ? `<a href="${later}">${t("drain.next")} ›</a><a href="#drain">${t("drain.latest")}</a>` : ""}</div>`;
+    return `<div class="head"><div><h1>${t("drain.title")}</h1><div class="sub">${t("drain.sub", { from: day(p.window.from, { weekday: false }), to: day(p.window.to, { weekday: false }) })}</div></div>${stepper}</div>
+      <div class="grid">${drainCards(p)}</div>`;
+  },
+  mount(root, p) { mountDrain(root, p); },
+};
+
+// the cards themselves, for this page and for the end of Recovery
+export function drainCards(p) {
     const compared = p.rows.filter((r) => hasValue(r) && r.band).length;
     const worse = worseLine(p.worse, compared, p.rows.length);
     const plan = planLine(p.rows);
-    const later = p.next === p.latest ? "#drain" : `#drain/${p.next}`;
-    const stepper = `<div class="stepper"><a href="#drain/${p.prev}">‹ ${t("drain.prev")}</a>${p.next ? `<a href="${later}">${t("drain.next")} ›</a><a href="#drain">${t("drain.latest")}</a>` : ""}</div>`;
-    // the seven in three groups, each headed where its first signal starts
     const GROUP = { resting_hr: "body", asleep: "sleep", before_sleep: "screen" };
     const rows = p.rows.map((r, i) => `${GROUP[r.key] ? `<div class="drain-group section-title">${t(`drain.group.${GROUP[r.key]}`)}</div>` : ""}<div class="drain-row">
       <div class="what"><b>${esc(label(r.key))}</b><span>${esc(t(`drain.why.${r.key}`))}</span></div>
@@ -90,8 +98,8 @@ export default {
     if (s.hrv_change !== null && s.hrv_change !== undefined) strainFacts.push(t("week.hrv", { dir: t(s.hrv_change >= 0 ? "week.up" : "week.down"), pct: `${num(Math.abs(s.hrv_change) * 100)}%` }));
     const load = s.strain ? "drain.load_strain" : s.nights < p.rule.min_window ? "drain.load_unknown" : "drain.load_ok";
     const key = (k, text) => `<span class="key">${legendKey(k)}${text}</span>`;
-    return `<div class="head"><div><h1>${t("drain.title")}</h1><div class="sub">${t("drain.sub", { from: day(p.window.from, { weekday: false }), to: day(p.window.to, { weekday: false }) })}</div></div>${stepper}</div>
-      <div class="grid">
+    // the seven in three groups, each headed where its first signal starts
+    return `
         <section class="card span-12"><span class="eyebrow">${t("drain.eyebrow")}</span>
           <p class="lede" style="margin:6px 0 4px">${esc(worse)}</p><p class="small" style="margin:0;color:var(--ink-2)">${esc(plan)}</p></section>
         <section class="card span-12"><h2>${t("drain.items")}<span class="aside legend">
@@ -101,11 +109,10 @@ export default {
           <p class="lede" style="font-size:var(--t-lg)">${t(load)}</p>
           ${strainFacts.length ? `<ul class="agenda">${strainFacts.map((f) => `<li style="grid-template-columns:minmax(0,1fr)"><span>${esc(f)}</span></li>`).join("")}</ul>` : ""}
           <details class="how"><summary>${t("ui.how")}</summary><p>${t("week.rule")}</p></details></section>
-        <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary><p>${t("drain.rule", { w: p.rule.window, b: p.rule.baseline })}</p></details></section>
-      </div>`;
-  },
-  mount(root, p) {
+        <section class="card span-12"><details class="how"><summary>${t("ui.how")}</summary><p>${t("drain.rule", { w: p.rule.window, b: p.rule.baseline })}</p></details></section>`;
+}
+
+export function mountDrain(root, p) {
     root.querySelectorAll(".drain-strip").forEach((el) => draw(el, (w) => rangeStrip(p.rows[el.dataset.i], { width: w })));
     root.querySelectorAll(".drain-weeks").forEach((el) => { const row = p.rows[el.dataset.i]; draw(el, (w) => trendLine(row.weeks, { width: w, tip: weekTip(row) })); });
-  },
-};
+  }

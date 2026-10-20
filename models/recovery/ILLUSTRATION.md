@@ -39,4 +39,3 @@ backdrop or ground shadow.
 Four fixed illustrations are used instead of continuous 3D rotation. Region
 boundaries are approximate UI hit areas at the existing check-in granularity.
 The image cannot establish individual muscle injury, organ state, or recovery time.
-Legacy `ATTRIBUTION.md` applies to the previous BodyParts3D asset, not this image.

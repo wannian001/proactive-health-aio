@@ -1,9 +1,9 @@
 // Food: the last 7 logged days against your normal and your plan, when the last meal came before sleep, the
 // energy balance against the scale, and what an early dinner has gone with the next morning.
-import { draw, esc, legendKey, mealTimeline, rangeStrip, trendLine } from "../charts.js?v=93bad7f144";
-import { day, dur, inSentence, num, shortDay, signed, t } from "../i18n.js?v=93bad7f144";
-import { STATE_ICON } from "../icons.js?v=93bad7f144";
-import { mountTabs, tabs } from "./tabs.js?v=93bad7f144";
+import { draw, esc, legendKey, mealTimeline, rangeStrip, trendLine } from "../charts.js?v=51ede4cbfe";
+import { day, dur, inSentence, num, shortDay, signed, t } from "../i18n.js?v=51ede4cbfe";
+import { STATE_ICON } from "../icons.js?v=51ede4cbfe";
+import { mountTabs, tabs } from "./tabs.js?v=51ede4cbfe";
 
 function fmt(unit, v) {
   if (v === null || v === undefined) return "—";

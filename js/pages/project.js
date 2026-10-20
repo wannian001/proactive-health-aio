@@ -1,11 +1,12 @@
 // Overview (#project): what Proactive Health AIO is, who it is for, the problem it answers and how, where the data
 // comes from (which device collects what, how often, and what it costs your computer, measured), how far "proactive"
 // goes today, then the comparison with what people use now, the trade-offs, where it stands, what comes next and who
-// made it (each opening on a click).
+// made it (each opening on a click), and at the end how to use it (guide.js, once a page of its own).
 // The same facts as the README's "Why it exists", shorter. The server only names the page (modules/docs.py).
 // History is not in this repository: it quotes the personal system it comes from, so it lives on the author's site.
-import { esc } from "../charts.js?v=93bad7f144";
-import { getLang, t } from "../i18n.js?v=93bad7f144";
+import { esc } from "../charts.js?v=51ede4cbfe";
+import { getLang, t } from "../i18n.js?v=51ede4cbfe";
+import { guideSteps } from "./guide.js?v=51ede4cbfe";
 
 const REPO = "https://github.com/wannian001/proactive-health-aio";
 
@@ -57,7 +58,7 @@ const PROJECT = {
         after: "现在的代价：好几个 App，常常好几份订阅，历史散在几处云上，分数的公式看不到，最后还得自己把它们拼起来。" },
       { h: "有意的取舍", items: [
         "<b>不上云、不在后台同步：</b>iPhone App 打开时才把数据发到你自己的电脑；没装就导入 Apple 健康的导出包。换来的是数据只在你的电脑上。",
-        "<b>规则，不是模型：</b>建议来自几条写明的固定规则，能解释、能检查，但不会自己“学”。",
+        "<b>规则，不是模型：</b>建议来自几条写明的固定规则，能解释、能检查，但不会自己“学”。可选的助手只负责读懂你说的“哪里紧”那句话，默认关着。",
         "<b>和自己比：</b>刚开始的 28 天还没有“平常”，回答会少。",
         "<b>不是医疗建议：</b>只看行为和身体信号，不诊断，不算连胜。",
         "<b>只有一个总分：</b>练后第二天的恢复分。四项先各自和你的平常比、换成同一把 0–10 的尺子再取平均，每一项都摊开写；别处单位不同的东西从不加成一个数，比如身体和精神的负担各看各的。"] },
@@ -75,7 +76,7 @@ const PROJECT = {
         "它来自我自己用了一年的个人系统，四代迭代见“迭代记录”（在我的网站上）。",
         "Python 标准库，不用装别的包；颜色、组件和图表是一套带版本号的设计套件；每条规则都有测试。"] },
     ],
-    links: [[REPO, "GitHub 仓库"], ["#guide", "使用说明"], ["history", "迭代记录"], ["#kit", "设计套件"]],
+    links: [[REPO, "GitHub 仓库"], ["#project/guide", "使用说明"], ["history", "迭代记录"], ["#kit", "设计套件"]],
   },
   en: {
     title: "Overview", sub: "What it is, who it is for, and how it differs from what people use now",
@@ -124,7 +125,7 @@ const PROJECT = {
         after: "What that costs now: several apps, often several subscriptions, your history in several clouds, scores whose formula you cannot check, and you still do the joining-up yourself." },
       { h: "Trade-offs, on purpose", items: [
         "<b>No cloud, and no sending while the app is closed:</b> the iPhone app sends the data to your own computer while it is open; without it you import an Apple Health export. In return, the data never leaves your computer.",
-        "<b>Rules, not a model:</b> the advice comes from a few fixed rules, written down, explainable and checkable, but it does not “learn”.",
+        "<b>Rules, not a model:</b> the advice comes from a few fixed rules, written down, explainable and checkable, but it does not “learn”. An optional assistant, off by default, only reads the sentence you type about where it feels tight.",
         "<b>You against you:</b> in the first 28 days there is no normal yet, so there are fewer answers.",
         "<b>Not medical advice:</b> behaviour and body signals only; no diagnosis, no streaks.",
         "<b>One total score only:</b> the morning after training. Its four parts are each set against your normal on the same 0–10 scale and then averaged, every part shown; nothing else with different units is added into one number, so the load on the body and on the mind stay apart."] },
@@ -142,7 +143,7 @@ const PROJECT = {
         "It comes from the personal system I have used for a year; its four generations are in History (on my own site).",
         "Python's standard library, nothing else to install; colours, components and charts are one versioned design kit; every rule has tests."] },
     ],
-    links: [[REPO, "GitHub repository"], ["#guide", "Guide"], ["history", "History"], ["#kit", "Design kit"]],
+    links: [[REPO, "GitHub repository"], ["#project/guide", "Guide"], ["history", "History"], ["#kit", "Design kit"]],
   },
 };
 
@@ -194,6 +195,7 @@ export default {
         ${dataHtml(c)}
         ${ladderHtml(c)}
         <section class="card"><ol class="doc-folds">${c.folds.map(fold).join("")}</ol></section>
+        ${guideSteps(false)}
         <p class="doc-try">${links}</p>
       </div>`;
   },

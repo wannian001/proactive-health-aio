@@ -1,9 +1,9 @@
 // Shared components for Today, Rest & rewards and Follow-up. Current feelings are said in one place, the
 // "How you are right now" card on Recovery; the pages here show what was said and link to it.
-import { isStatic, post } from "./api.js?v=0f06915566";
-import { esc } from "./charts.js?v=0f06915566";
-import { clock, day, measure, num, t } from "./i18n.js?v=0f06915566";
-import { icon } from "./icons.js?v=0f06915566";
+import { isStatic, post } from "./api.js?v=65d4646a27";
+import { esc } from "./charts.js?v=65d4646a27";
+import { clock, day, measure, num, t } from "./i18n.js?v=65d4646a27";
+import { icon } from "./icons.js?v=65d4646a27";
 
 export const ACTIVITY = {
   sit: { icon: "sleep", category: "quiet" }, music: { icon: "music", category: "quiet" },

@@ -1,7 +1,7 @@
-import { isStatic, post } from "../api.js?v=0f06915566";
-import { draw, esc, keptDots, stackedColumns } from "../charts.js?v=0f06915566";
-import { day, dur, shortDay, t } from "../i18n.js?v=0f06915566";
-import { ACTIVITY, activityIcon, activeHtml, modeNote, mountRestore, nextStep, nowLine, restoreButton } from "../restore-ui.js?v=0f06915566";
+import { isStatic, post } from "../api.js?v=65d4646a27";
+import { draw, esc, keptDots, stackedColumns } from "../charts.js?v=65d4646a27";
+import { day, dur, shortDay, t } from "../i18n.js?v=65d4646a27";
+import { ACTIVITY, activityIcon, activeHtml, modeNote, mountRestore, nextStep, nowLine, restoreButton } from "../restore-ui.js?v=65d4646a27";
 
 // Only UI preferences live in memory. All activity, check-in and reward state comes from the server.
 let tab = "rest", filter = "all", selected = null;

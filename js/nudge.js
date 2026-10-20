@@ -2,11 +2,11 @@
 // shown once per reminder (a stretch's since + its round), above the workout prompt. "Later" hides this round; the
 // next round, REPEAT_MIN minutes on, comes back if you are still at the computer. The Mac app shows the same reminder
 // as a notification when no page is open.
-import { get, isStatic } from "./api.js?v=0f06915566";
-import { esc } from "./charts.js?v=0f06915566";
-import { dur, t } from "./i18n.js?v=0f06915566";
-import { icon } from "./icons.js?v=0f06915566";
-import { mountCare, routineHtml, stopFold, words } from "./care-ui.js?v=0f06915566";
+import { get, isStatic } from "./api.js?v=65d4646a27";
+import { esc } from "./charts.js?v=65d4646a27";
+import { dur, t } from "./i18n.js?v=65d4646a27";
+import { icon } from "./icons.js?v=65d4646a27";
+import { mountCare, routineHtml, stopFold, words } from "./care-ui.js?v=65d4646a27";
 
 const SEEN = "healthaio.nudge";
 const EVERY_MS = 120000;

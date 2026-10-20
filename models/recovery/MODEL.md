@@ -31,19 +31,24 @@ Everything is from the [MakeHuman](https://github.com/makehumancommunity/makehum
 
 ## Regions
 
-Each vertex carries its share of the seven check-in regions (`schema.SORE_REGIONS`) and of "other" (forearms, hands,
-thighs, feet, which the check-in does not record). The upper arms are what the skeleton weights put on the arm bones,
-cut at the elbow; the rest is cut by height at the skeleton's joints: the head from mid-neck up, the torso down to
-9 cm above the hip joints, the pelvis down to 2 cm below the crotch, the calves from knee to ankle. Edges are
-softened over about a centimetre. These are hit areas at the check-in's granularity, and the lines are a guide to
-where muscles lie: the model cannot show an individual muscle's injury, an organ's state or a recovery time.
+Each vertex carries its two strongest regions among the 31 places soreness is said for (`schema.SORE_REGIONS`) and
+"other" (the head, forearms, hands and feet, which are not places), and how much of it is the first. The arms are
+what the skeleton weights put on the arm bones: the first 36% of the way to the elbow is the shoulder, split front
+and back at the shoulder joint, then the upper arm to the elbow. The neck runs from its base to under the chin in
+front and to the skull behind, cut front and back at its middle, the back in halves. The torso is cut front and back
+at its own middle, height by height: the chest down to a little under the breast joints, then the abs; behind, the
+upper back down to 15 cm above the waist, the lower back to the waist, then the glutes. Below the gluteal fold each
+leg is cut in four by the angle round its own middle (front, back, outside, inside), the thigh to the knee, the calf
+to the ankle. Edges are softened over about a centimetre. These are hit areas at the granularity people say where it
+hurts, and the lines are a guide to where muscles lie: the model cannot show an individual muscle's injury, an organ's state or a recovery time.
 
 ## File layout
 
-Little-endian: `"HAB2"`, a uint32 header length, the JSON header (space-padded to 4 bytes), then positions
+Little-endian: `"HAB3"`, a uint32 header length, the JSON header (space-padded to 4 bytes), then positions
 (int16 x3, padded to 4 bytes; a position is `center + q / 32767 * extent`, metres, soles at y = 0, facing +z, the
-person's left at +x), normals (int8 x3 + 0), occlusion and cloth (uint8, + 2 zero bytes), region shares (uint8 x8,
-in the header's order) and triangles (uint16 x3); then, each block 4-byte aligned, the muscle lines' positions
+person's left at +x), normals (int8 x3 + 0), occlusion and cloth (uint8, + 2 zero bytes), regions (uint8 x4: the
+strongest region's index in the header's list, the second's, how much of the two is the first × 255, 0) and
+triangles (uint16 x3); then, each block 4-byte aligned, the muscle lines' positions
 (int16 x3, as the body's) and triangles (uint16 x3), counted in the header's `lines`. The header also holds, per
 region, eight surface points (one per 45° around the body) where the page puts its marker for a region chosen
 from the list.

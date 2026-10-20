@@ -1,9 +1,9 @@
 // Short moves (routines.py, both languages in the payload) and "I did it": shared by the sitting card on Exercise,
 // the sitting reminder in the corner and the "where it's tight" part of Recovery's check-in card.
-import { isStatic, post } from "./api.js?v=0f06915566";
-import { esc } from "./charts.js?v=0f06915566";
-import { getLang, t } from "./i18n.js?v=0f06915566";
-import { icon } from "./icons.js?v=0f06915566";
+import { isStatic, post } from "./api.js?v=65d4646a27";
+import { esc } from "./charts.js?v=65d4646a27";
+import { getLang, t } from "./i18n.js?v=65d4646a27";
+import { icon } from "./icons.js?v=65d4646a27";
 
 export const words = (r) => r[getLang()] || r.en;
 

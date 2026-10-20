@@ -1,7 +1,7 @@
 // A cartoon 3D body that turns all the way round: MakeHuman's CC0 base mesh, rounded, given muscle lines and split into
 // the check-in regions by tools/make_body_mesh.py (models/recovery/MODEL.md), drawn with plain WebGL. All colours on
 // it come from recorded regional data.
-import { rv, t } from "./i18n.js?v=0f06915566";
+import { rv, t } from "./i18n.js?v=65d4646a27";
 
 // the side of the person turned towards you at a yaw of 0°, 90°, 180°, 270° (a positive yaw turns their front to your right)
 const VIEWS = ["angleFront", "angleRight", "angleBack", "angleLeft"];
@@ -17,11 +17,12 @@ const OUTLINE = 1.6;  // CSS pixels
 
 export function viewIndex(yaw) { return ((Math.round(yaw / QUARTER) % 4) + 4) % 4; }
 
-// "HAB2", uint32 header length, JSON header, then int16 positions, int8 normals, uint8 occlusion + cloth, uint8 region shares,
+// "HAB3", uint32 header length, JSON header, then int16 positions, int8 normals, uint8 occlusion + cloth, uint8 regions
+// (the two strongest, by their index in header.regions, and how much of the first),
 // uint16 triangles; then the muscle lines' int16 positions and uint16 triangles, each block 4-byte aligned (tools/make_body_mesh.py)
 export function parseBody(buffer) {
   const bytes = new Uint8Array(buffer);
-  if (String.fromCharCode(...bytes.subarray(0, 4)) !== "HAB2") throw Error("Not a body file");
+  if (String.fromCharCode(...bytes.subarray(0, 4)) !== "HAB3") throw Error("Not a body file");
   const length = new DataView(buffer).getUint32(4, true);
   const header = JSON.parse(new TextDecoder().decode(bytes.subarray(8, 8 + length)));
   const n = header.vertices;
@@ -29,7 +30,7 @@ export function parseBody(buffer) {
   const quant = new Int16Array(buffer, at, n * 3); at += n * 6; at += (4 - at % 4) % 4;
   const normals = new Int8Array(buffer, at, n * 4); at += n * 4;
   const extra = new Uint8Array(buffer, at, n * 4); at += n * 4;
-  const shares = new Uint8Array(buffer, at, n * 8); at += n * 8;
+  const shares = new Uint8Array(buffer, at, n * 4); at += n * 4;
   const indices = new Uint16Array(buffer, at, header.triangles * 3); at += header.triangles * 6;
   let lines = null;
   if (header.lines) {
@@ -77,13 +78,15 @@ function raycast(body, origin, dir) {
 }
 
 const VERTEX = `
-attribute vec3 aPos; attribute vec4 aNormal; attribute vec4 aExtra; attribute vec4 aRegA; attribute vec4 aRegB;
+attribute vec3 aPos; attribute vec4 aNormal; attribute vec4 aExtra; attribute vec4 aRegion;
 uniform vec3 uCenter, uExtent; uniform mat3 uTurn; uniform mat4 uCamera; uniform float uOutline;
-varying vec3 vNormal, vWorld; varying float vCloth, vY, vOcclusion; varying vec4 vRegA, vRegB;
+uniform vec4 uTint[REGIONS];
+varying vec3 vNormal, vWorld; varying float vCloth, vY, vOcclusion; varying vec4 vTint;
 void main() {
   vec3 p = uCenter + aPos * uExtent;
   vY = p.y; vNormal = uTurn * aNormal.xyz; vOcclusion = aExtra.x; vCloth = aExtra.y;
-  vRegA = aRegA; vRegB = aRegB;
+  // the two strongest regions' colours, mixed by how much of the first (soft edges between regions)
+  vTint = mix(uTint[int(aRegion.y + 0.5)], uTint[int(aRegion.x + 0.5)], aRegion.z / 255.0);
   vWorld = uTurn * (p + aNormal.xyz * uOutline);  // the outline pass draws the back faces a little bigger
   gl_Position = uCamera * vec4(vWorld, 1.0);
 }`;
@@ -95,15 +98,12 @@ precision highp float;
 #else
 precision mediump float;
 #endif
-varying vec3 vNormal, vWorld; varying float vCloth, vY, vOcclusion; varying vec4 vRegA, vRegB;
-uniform vec3 uEye, uSkin, uShorts, uLineColor; uniform float uWaist, uHem, uRim, uOutline; uniform vec4 uTint[8];
+varying vec3 vNormal, vWorld; varying float vCloth, vY, vOcclusion; varying vec4 vTint;
+uniform vec3 uEye, uSkin, uShorts, uLineColor; uniform float uWaist, uHem, uRim, uOutline;
 void main() {
   if (uOutline > 0.0) { gl_FragColor = vec4(uLineColor, 1.0); return; }
   if (uOutline < 0.0) { gl_FragColor = vec4(uLineColor, 0.72); return; }  // a muscle line, laid over the skin
-  // each region's colour up to the middle of its soft edge
-  vec4 a = smoothstep(0.3, 0.7, vRegA), b = smoothstep(0.3, 0.7, vRegB);
-  vec4 tint = a.x * uTint[0] + a.y * uTint[1] + a.z * uTint[2] + a.w * uTint[3]
-            + b.x * uTint[4] + b.y * uTint[5] + b.z * uTint[6] + b.w * uTint[7];
+  vec4 tint = vTint;
   vec3 n = normalize(vNormal);
   if (!gl_FrontFacing) n = -n;
   vec3 v = normalize(uEye - vWorld);
@@ -120,7 +120,7 @@ void main() {
   gl_FragColor = vec4(min(color, vec3(1.0)), 1.0);
 }`;
 
-function compile(gl) {
+function compile(gl, regions) {
   const shader = (type, source) => {
     const s = gl.createShader(type);
     gl.shaderSource(s, source); gl.compileShader(s);
@@ -128,7 +128,7 @@ function compile(gl) {
     return s;
   };
   const program = gl.createProgram();
-  gl.attachShader(program, shader(gl.VERTEX_SHADER, VERTEX));
+  gl.attachShader(program, shader(gl.VERTEX_SHADER, VERTEX.replace("REGIONS", String(regions))));
   gl.attachShader(program, shader(gl.FRAGMENT_SHADER, FRAGMENT));
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program) || "Link failed");
@@ -173,26 +173,26 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
 
     let program, loc, bindBody, bindLines;
     function setup() {
-      program = compile(gl);
+      program = compile(gl, R.length);
       gl.useProgram(program);
       loc = Object.fromEntries(["uCenter", "uExtent", "uTurn", "uCamera", "uTint", "uEye", "uSkin", "uShorts", "uWaist", "uHem", "uRim", "uOutline", "uLineColor"]
         .map(name => [name, gl.getUniformLocation(program, name)]));
       const buffer = (data, target = gl.ARRAY_BUFFER) => { const b = gl.createBuffer(); gl.bindBuffer(target, b); gl.bufferData(target, data, gl.STATIC_DRAW); return b; };
-      const at = Object.fromEntries(["aPos", "aNormal", "aExtra", "aRegA", "aRegB"].map(name => [name, gl.getAttribLocation(program, name)]));
+      const at = Object.fromEntries(["aPos", "aNormal", "aExtra", "aRegion"].map(name => [name, gl.getAttribLocation(program, name)]));
       const own = { pos: buffer(body.quant), normal: buffer(body.normals), extra: buffer(body.extra), shares: buffer(body.shares),
         index: buffer(body.indices, gl.ELEMENT_ARRAY_BUFFER) };
       const ink = body.lines && { pos: buffer(body.lines.quant), index: buffer(body.lines.indices, gl.ELEMENT_ARRAY_BUFFER) };
-      const point = (name, b, size, type, stride = 0, offset = 0) => {
-        gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(at[name]); gl.vertexAttribPointer(at[name], size, type, true, stride, offset);
+      const point = (name, b, size, type, normalized = true) => {
+        gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(at[name]); gl.vertexAttribPointer(at[name], size, type, normalized, 0, 0);
       };
       bindBody = () => {
         point("aPos", own.pos, 3, gl.SHORT); point("aNormal", own.normal, 4, gl.BYTE); point("aExtra", own.extra, 4, gl.UNSIGNED_BYTE);
-        point("aRegA", own.shares, 4, gl.UNSIGNED_BYTE, 8, 0); point("aRegB", own.shares, 4, gl.UNSIGNED_BYTE, 8, 4);
+        point("aRegion", own.shares, 4, gl.UNSIGNED_BYTE, false);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, own.index);
       };
       bindLines = ink && (() => {  // only positions; the rest held constant
         point("aPos", ink.pos, 3, gl.SHORT);
-        for (const name of ["aNormal", "aExtra", "aRegA", "aRegB"]) { gl.disableVertexAttribArray(at[name]); gl.vertexAttrib4f(at[name], 0, 0, 0, 0); }
+        for (const name of ["aNormal", "aExtra", "aRegion"]) { gl.disableVertexAttribArray(at[name]); gl.vertexAttrib4f(at[name], 0, 0, 0, 0); }
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ink.index);
       });
       gl.uniform3fv(loc.uCenter, H.center); gl.uniform3fv(loc.uExtent, H.extent);
@@ -375,7 +375,11 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
       const hit = raycast(body, toBody(camera.eye), toBody(dir));
       if (!hit) return;
       const I = body.indices, S = body.shares, P = body.positions, w = [1 - hit.u - hit.v, hit.u, hit.v];
-      const share = R.map((_, r) => w.reduce((s, wk, j) => s + wk * S[I[hit.k + j] * 8 + r], 0));
+      const share = R.map(() => 0);
+      w.forEach((wk, j) => {  // each corner's two regions, by how much of each
+        const v = I[hit.k + j] * 4, first = S[v + 2] / 255;
+        share[S[v]] += wk * first; share[S[v + 1]] += wk * (1 - first);
+      });
       const region = R[share.indexOf(Math.max(...share))];
       if (region !== "other" && regions.includes(region)) {
         const point = [0, 1, 2].map(c => w.reduce((s, wk, j) => s + wk * P[I[hit.k + j] * 3 + c], 0));

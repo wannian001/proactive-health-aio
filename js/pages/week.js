@@ -1,9 +1,9 @@
 // Schedule & load (#week): the seven days on the calendar, how heavy the weeks around them are for body and mind
 // (load.js, against your normal, never added into one number), what is due, and the training load day by day.
-import { esc } from "../charts.js?v=0f06915566";
-import { clock, day, dur, num, shortDay, t, weekdayShort, wtype } from "../i18n.js?v=0f06915566";
-import { icon } from "../icons.js?v=0f06915566";
-import { heroHtml, loadRules, mountLoad, trainingHtml, weeksHtml } from "./load.js?v=0f06915566";
+import { esc } from "../charts.js?v=65d4646a27";
+import { clock, day, dur, num, shortDay, t, weekdayShort, wtype } from "../i18n.js?v=65d4646a27";
+import { icon } from "../icons.js?v=65d4646a27";
+import { heroHtml, loadRules, mountLoad, trainingHtml, weeksHtml } from "./load.js?v=65d4646a27";
 
 const shift = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const leftText = (n) => (n < 0 ? t("week.days_ago", { n: -n }) : n <= 1 ? t(`today.days_left.${n}`) : t("today.days_left.n", { n }));

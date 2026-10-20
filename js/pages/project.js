@@ -4,9 +4,9 @@
 // made it (each opening on a click), and at the end how to use it (guide.js, once a page of its own).
 // The same facts as the README's "Why it exists", shorter. The server only names the page (modules/docs.py).
 // History is not in this repository: it quotes the personal system it comes from, so it lives on the author's site.
-import { esc } from "../charts.js?v=0f06915566";
-import { getLang, t } from "../i18n.js?v=0f06915566";
-import { guideSteps } from "./guide.js?v=0f06915566";
+import { esc } from "../charts.js?v=65d4646a27";
+import { getLang, t } from "../i18n.js?v=65d4646a27";
+import { guideSteps } from "./guide.js?v=65d4646a27";
 
 const REPO = "https://github.com/wannian001/proactive-health-aio";
 

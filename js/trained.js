@@ -1,14 +1,14 @@
 // What a workout trained. After a strength session or a hard one (effort 7 or more), every page shows a prompt in the
-// corner for 36 hours (modules/recovery.py prompt()): "Note it" opens a dialog with the body figure, a button per
-// region and a note box (typed, or dictated with the phone keyboard's microphone); parts the note names light up by
-// themselves. Saved into workout_notes.csv (POST /api/trained); the next mornings' check-in asks about those parts.
+// corner for 36 hours (modules/recovery.py prompt()): "Note it" opens a dialog with a note box (typed, or dictated with
+// the phone keyboard's microphone) and the places, a button each, grouped by area; places the note names light up by
+// themselves. Saved into workout_notes.csv (POST /api/trained).
 // "Not this time" saves an empty row, so the prompt does not come back on another device; the × only hides it until
 // the app is opened again. The reading pages (Overview, Guide, the kit gallery) do not show it.
-import { isStatic, post } from "./api.js?v=0f06915566";
-import { esc } from "./charts.js?v=0f06915566";
-import { figureSvg, mountFigure, regionsIn } from "./figure.js?v=0f06915566";
-import { clock, day, dur, num, t, toDate, wtype } from "./i18n.js?v=0f06915566";
-import { icon } from "./icons.js?v=0f06915566";
+import { isStatic, post } from "./api.js?v=65d4646a27";
+import { esc } from "./charts.js?v=65d4646a27";
+import { clock, day, dur, num, t, toDate, wtype } from "./i18n.js?v=65d4646a27";
+import { areaOf } from "./sore-say.js?v=65d4646a27";
+import { icon } from "./icons.js?v=65d4646a27";
 
 const SKIPPED = "healthaio.trained.skipped";  // the static demo cannot save: "Not this time" is remembered here
 const LATER = "healthaio.trained.later";      // × : hidden until the app is opened again (this tab only)
@@ -24,44 +24,56 @@ function when(iso, today) {
 
 const refresh = () => window.dispatchEvent(new HashChangeEvent("hashchange"));
 
-// info: {figure, regions, words} (the prompt's or the Recovery page's payload); s: the session
+// the places a note's words name (words: [[words], [regions]] from the payload, as checkin.REGION_WORDS): longer words
+// first, each used up once matched; English words whole, with a plural s or es
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export function regionsIn(note, words) {
+  let text = ` ${String(note || "").toLowerCase()} `;
+  const found = new Set();
+  const all = words.flatMap(([ws, rs]) => ws.map((w) => [w, rs])).sort((a, b) => b[0].length - a[0].length);
+  for (const [w, rs] of all) {
+    const src = /^[\x20-\x7e]+$/.test(w) ? `\\b${escRe(w)}(?:s|es)?\\b` : escRe(w);
+    if (new RegExp(src).test(text)) {
+      text = text.replace(new RegExp(src, "g"), " ");
+      rs.forEach((r) => found.add(r));
+    }
+  }
+  return found;
+}
+
+// info: {regions, areas, words} (the prompt's or the Recovery page's payload); s: the session
 export function openTrained(info, s, done = refresh) {
   document.querySelector(".trained-dlg")?.remove();
   const chosen = new Set(s.note?.regions || []);
   const on = new Set(), off = new Set();  // the user's own taps win over the note's words
   let fromWords = new Set();
   const selected = () => new Set([...info.regions].filter((r) => on.has(r) || ((chosen.has(r) || fromWords.has(r)) && !off.has(r))));
-  const fills = (sel) => Object.fromEntries(info.regions.map((r) => [r, sel.has(r) ? "var(--c-exercise)" : "var(--c-sore-0)"]));
-  const label = (r, sel = selected()) => t("trained.region_aria", { region: t(`sore.region.${r}`), state: t(sel.has(r) ? "trained.on" : "trained.off") });
   const dlg = document.createElement("dialog");
   dlg.className = "trained-dlg";
   dlg.setAttribute("aria-labelledby", "trained-title");
   dlg.innerHTML = `<form method="dialog" class="trained-form">
     <h2 id="trained-title">${esc(t("trained.title", { day: day(s.start, { weekday: true }), clock: clock(s.start), what: workoutText(s) }))}</h2>
-    <div class="trained-layout">
-      <div class="fig-plate">${figureSvg(info, fills(selected()), (r) => label(r))}</div>
+    <div class="trained-layout trained-one">
       <div class="trained-side">
         <label class="small" for="trained-note">${t("trained.note_label")}</label>
         <textarea id="trained-note" rows="3" maxlength="500" placeholder="${esc(t("trained.placeholder"))}">${esc(s.note?.note || "")}</textarea>
         <p class="xs muted" style="margin:4px 0 var(--s-3)">${t("trained.words_note")}</p>
         <span class="section-title">${t("trained.regions")}</span>
-        <div class="trained-chips">${info.regions.map((r) => `<button type="button" class="goal-btn trained-chip" data-region="${r}" aria-pressed="false">${t(`sore.region.${r}`)}</button>`).join("")}</div>
+        ${info.areas.map((a) => `<div class="now-row trained-group"><span class="xs muted now-label">${t(`sore.area.${a.area}`)}</span><span class="trained-chips">${info.regions.filter((r) => areaOf(r, info.areas) === a.area)
+          .map((r) => `<button type="button" class="goal-btn trained-chip" data-region="${r}" aria-pressed="false">${t(`sore.region.${r}`)}</button>`).join("")}</span></div>`).join("")}
         <div class="goal-act" style="margin-top:var(--s-4)"><button type="button" class="goal-btn primary" data-save${isStatic ? " disabled" : ""}>${t("trained.save")}</button>
           <button type="button" class="goal-btn" data-cancel>${t("trained.cancel")}</button></div>
         <p class="xs trained-msg" role="status">${isStatic ? t("trained.static") : ""}</p>
       </div></div></form>`;
   document.body.appendChild(dlg);
-  const svg = dlg.querySelector(".fig");
   const paint = () => {
-    const sel = selected(), f = fills(sel);
-    svg.querySelectorAll(".fig-region").forEach((g) => { g.style.fill = f[g.dataset.region]; g.setAttribute("aria-label", label(g.dataset.region, sel)); });
+    const sel = selected();
     dlg.querySelectorAll(".trained-chip").forEach((b) => b.setAttribute("aria-pressed", String(sel.has(b.dataset.region))));
   };
   const tap = (r) => {
     if (selected().has(r)) { off.add(r); on.delete(r); } else { on.add(r); off.delete(r); }
     paint();
   };
-  mountFigure(svg, info, { tap, tip: (r) => `${t(`sore.region.${r}`)} · ${t(selected().has(r) ? "trained.on" : "trained.off")}` });
   dlg.querySelectorAll(".trained-chip").forEach((b) => { b.onclick = () => tap(b.dataset.region); });
   const note = dlg.querySelector("#trained-note");
   note.addEventListener("input", () => { fromWords = regionsIn(note.value, info.words); paint(); });
@@ -82,7 +94,7 @@ export function openTrained(info, s, done = refresh) {
     }
   };
   dlg.showModal();
-  if (matchMedia("(min-width: 900px)").matches) note.focus();  // on a phone the keyboard would cover the figure
+  if (matchMedia("(min-width: 900px)").matches) note.focus();  // on a phone the keyboard would cover the places
 }
 
 // the prompt in the corner, on every page but the reading ones (info: the "prompt" payload)

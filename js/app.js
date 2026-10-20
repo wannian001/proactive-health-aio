@@ -1,31 +1,31 @@
 // Shell: the menu (a left sidebar that folds to icons, a bottom tab bar on phones), language and light/dark,
 // hash routing (#today, #today/2026-10-11).
-import { get, isStatic } from "./api.js?v=0f06915566";
-import { installTooltip, esc, setFormat } from "./charts.js?v=0f06915566";
-import { getLang, setLang, t, clock, dur, measure, shortDay, toDate, wtype } from "./i18n.js?v=0f06915566";
-import { icon } from "./icons.js?v=0f06915566";
-import { mountPrompt } from "./trained.js?v=0f06915566";
-import { loadUpdate, mountUpdate, updateNote } from "./update.js?v=0f06915566";
-import body from "./pages/body.js?v=0f06915566";
-import data from "./pages/data.js?v=0f06915566";
-import drain from "./pages/drain.js?v=0f06915566";
-import exercise from "./pages/exercise.js?v=0f06915566";
-import followup from "./pages/followup.js?v=0f06915566";
-import load from "./pages/load.js?v=0f06915566";
-import recovery from "./pages/recovery.js?v=0f06915566";
-import restore from "./pages/restore.js?v=0f06915566";
-import { quietSuggestion } from "./restore-ui.js?v=0f06915566";
-import { startNudges } from "./nudge.js?v=0f06915566";
-import { mountInfo } from "./info.js?v=0f06915566";
-import food from "./pages/food.js?v=0f06915566";
-import goals from "./pages/goals.js?v=0f06915566";
-import guide from "./pages/guide.js?v=0f06915566";
-import kit from "./pages/kit.js?v=0f06915566";
-import project from "./pages/project.js?v=0f06915566";
-import sleep from "./pages/sleep.js?v=0f06915566";
-import time from "./pages/time.js?v=0f06915566";
-import today from "./pages/today.js?v=0f06915566";
-import week from "./pages/week.js?v=0f06915566";
+import { get, isStatic } from "./api.js?v=65d4646a27";
+import { installTooltip, esc, setFormat } from "./charts.js?v=65d4646a27";
+import { getLang, setLang, t, clock, dur, measure, shortDay, toDate, wtype } from "./i18n.js?v=65d4646a27";
+import { icon } from "./icons.js?v=65d4646a27";
+import { mountPrompt } from "./trained.js?v=65d4646a27";
+import { loadUpdate, mountUpdate, updateNote } from "./update.js?v=65d4646a27";
+import body from "./pages/body.js?v=65d4646a27";
+import data from "./pages/data.js?v=65d4646a27";
+import drain from "./pages/drain.js?v=65d4646a27";
+import exercise from "./pages/exercise.js?v=65d4646a27";
+import followup from "./pages/followup.js?v=65d4646a27";
+import load from "./pages/load.js?v=65d4646a27";
+import recovery from "./pages/recovery.js?v=65d4646a27";
+import restore from "./pages/restore.js?v=65d4646a27";
+import { quietSuggestion } from "./restore-ui.js?v=65d4646a27";
+import { startNudges } from "./nudge.js?v=65d4646a27";
+import { mountInfo } from "./info.js?v=65d4646a27";
+import food from "./pages/food.js?v=65d4646a27";
+import goals from "./pages/goals.js?v=65d4646a27";
+import guide from "./pages/guide.js?v=65d4646a27";
+import kit from "./pages/kit.js?v=65d4646a27";
+import project from "./pages/project.js?v=65d4646a27";
+import sleep from "./pages/sleep.js?v=65d4646a27";
+import time from "./pages/time.js?v=65d4646a27";
+import today from "./pages/today.js?v=65d4646a27";
+import week from "./pages/week.js?v=65d4646a27";
 
 // the design kit gallery (#kit) is a page but not a menu item: the footer of every page and the Data page link to it
 const PAGES = { today, week, body, recovery, restore, load, sleep, exercise, food, time, drain, followup, goals, data, kit, project, guide };

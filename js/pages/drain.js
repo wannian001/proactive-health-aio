@@ -2,8 +2,8 @@
 // screen habits), each against your normal and, where set, your plan. Drawn as the long-term section at the end of
 // Recovery (#recovery/drain); #drain still renders it alone, for old links and the tests.
 // No total score: the signals have different units and different strength of evidence.
-import { draw, esc, legendKey, rangeStrip, trendLine } from "../charts.js?v=51ede4cbfe";
-import { day, dur, inSentence, num, shortDay, t } from "../i18n.js?v=51ede4cbfe";
+import { draw, esc, legendKey, rangeStrip, trendLine } from "../charts.js?v=0f06915566";
+import { day, dur, inSentence, num, shortDay, t } from "../i18n.js?v=0f06915566";
 
 const STATUS = { bad: "bad", good: "good", neutral: "" };
 const clockOf = (noon) => { const m = ((Math.round(noon + 720) % 1440) + 1440) % 1440; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };

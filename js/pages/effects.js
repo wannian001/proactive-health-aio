@@ -3,9 +3,9 @@
 // be better" (the whole list) and the Today page (one summary line that links to it). compareHtml draws the same
 // picture for the two other "how the body answered" analyses that card also holds: after hard training days
 // (modules/recovery.py response) and after stimulating screen days (modules/time.py response).
-import { draw, esc, interval } from "../charts.js?v=51ede4cbfe";
-import { dur, getLang, num, signed, t } from "../i18n.js?v=51ede4cbfe";
-import { STATE_ICON } from "../icons.js?v=51ede4cbfe";
+import { draw, esc, interval } from "../charts.js?v=0f06915566";
+import { dur, getLang, num, signed, t } from "../i18n.js?v=0f06915566";
+import { STATE_ICON } from "../icons.js?v=0f06915566";
 
 export function effectLabel(r) {
   const p = r.params || {};

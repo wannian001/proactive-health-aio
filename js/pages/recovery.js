@@ -4,15 +4,15 @@
 // training day (four parts side by side, averaged, with what it trained and how sore that was), the long view (Wear
 // and tear, drain.js: seven quiet signals over 7 days), and at the bottom the personal HRV model (once one is trained). How the body answers hard days is on Follow-up. What training asked of you is on Body & mind load.
 // The rules are in modules/recovery.py.
-import { isStatic, post } from "../api.js?v=51ede4cbfe";
-import { draw, esc, scoreDots } from "../charts.js?v=51ede4cbfe";
-import { clock, day, dur, num, rv, shortDay, t, toDate, wtype } from "../i18n.js?v=51ede4cbfe";
-import { icon } from "../icons.js?v=51ede4cbfe";
-import { openTrained } from "../trained.js?v=51ede4cbfe";
-import { overviewHtml, mountOverview } from "../recovery-overview.js?v=51ede4cbfe";
-import { hrvModelHtml } from "../hrv-model.js?v=51ede4cbfe";
-import { drainCards, mountDrain } from "./drain.js?v=51ede4cbfe";
-import { askHtml, mountAsk, mountCare, routineHtml, stopLine } from "../care-ui.js?v=51ede4cbfe";
+import { isStatic, post } from "../api.js?v=0f06915566";
+import { draw, esc, scoreDots } from "../charts.js?v=0f06915566";
+import { clock, day, dur, num, rv, shortDay, t, toDate, wtype } from "../i18n.js?v=0f06915566";
+import { icon } from "../icons.js?v=0f06915566";
+import { openTrained } from "../trained.js?v=0f06915566";
+import { overviewHtml, mountOverview } from "../recovery-overview.js?v=0f06915566";
+import { hrvModelHtml } from "../hrv-model.js?v=0f06915566";
+import { drainCards, mountDrain } from "./drain.js?v=0f06915566";
+import { askHtml, mountAsk, mountCare, routineHtml, stopLine } from "../care-ui.js?v=0f06915566";
 
 // a list of regions, both upper arms (or calves) said once
 const PAIRS = [["left_upper_arm", "right_upper_arm", "sore.pair.upper_arms"], ["left_calf", "right_calf", "sore.pair.calves"]];

@@ -1,5 +1,5 @@
-import { esc } from "./charts.js?v=51ede4cbfe";
-import { day, num, t } from "./i18n.js?v=51ede4cbfe";
+import { esc } from "./charts.js?v=0f06915566";
+import { day, num, t } from "./i18n.js?v=0f06915566";
 
 // the words are in i18n.js under hm.*
 const w = (key, data = {}) => t(`hm.${key}`, data);

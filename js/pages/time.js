@@ -5,10 +5,10 @@
 // the second is an association. The numbers and rules are in modules/time.py. One answer card, then the long view,
 // then the detail in tabs (a typical day, devices at once, where it came from); how the body answered is on
 // Follow-up, under "Tomorrow will be better".
-import { bullet, draw, esc, lanes, timeChart } from "../charts.js?v=51ede4cbfe";
-import { day, device, dur, getLang, num, t } from "../i18n.js?v=51ede4cbfe";
-import { icon, STATE_ICON } from "../icons.js?v=51ede4cbfe";
-import { mountTabs, tabs } from "./tabs.js?v=51ede4cbfe";
+import { bullet, draw, esc, lanes, timeChart } from "../charts.js?v=0f06915566";
+import { day, device, dur, getLang, num, t } from "../i18n.js?v=0f06915566";
+import { icon, STATE_ICON } from "../icons.js?v=0f06915566";
+import { mountTabs, tabs } from "./tabs.js?v=0f06915566";
 
 const SCREEN_PARTS = [["fun", "var(--c-fun)"], ["focus", "var(--c-focus)"], ["communication", "var(--c-comms)"], ["other", "var(--c-other)"]];
 const KEYS = ["fun", "before_sleep", "switches", "ratio", "longest_focus"];

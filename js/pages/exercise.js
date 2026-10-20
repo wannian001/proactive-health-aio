@@ -1,11 +1,11 @@
 // Exercise: this week against the weekly goal, the last 7 days against your normal, load against recovery,
 // twelve weeks by kind, and how the body tends to answer each kind the next day; then the other half of moving,
 // long stretches at the computer (modules/sitting.py) and the short moves for them (care-ui.js).
-import { bullet, draw, esc, spark, stackedColumns } from "../charts.js?v=51ede4cbfe";
-import { clock, day, dur, measure, num, shortDay, signed, t, weekdayShort, wtype } from "../i18n.js?v=51ede4cbfe";
-import { STATE_ICON } from "../icons.js?v=51ede4cbfe";
-import { mountTabs, tabs } from "./tabs.js?v=51ede4cbfe";
-import { mountCare, routineHtml, stopLine } from "../care-ui.js?v=51ede4cbfe";
+import { bullet, draw, esc, spark, stackedColumns } from "../charts.js?v=0f06915566";
+import { clock, day, dur, measure, num, shortDay, signed, t, weekdayShort, wtype } from "../i18n.js?v=0f06915566";
+import { STATE_ICON } from "../icons.js?v=0f06915566";
+import { mountTabs, tabs } from "./tabs.js?v=0f06915566";
+import { mountCare, routineHtml, stopLine } from "../care-ui.js?v=0f06915566";
 
 // sitting: today's longest stretch at the computer against your usual, right now if the Mac app says so, 14 days of
 // the longest stretch with the reminder line, today's long ones, and the moves (#exercise/sitting)

@@ -6,8 +6,8 @@
 // images), painted in --plate-ink on --plate, so it follows light and dark mode. Each region is painted over it
 // through its own mask, which leaves the muscle lines out, so they still show. An SVG mask does not change what a click hits, so the region under the pointer
 // is read from the masks' own pixels (within a few pixels, so a muscle line still counts).
-import { esc } from "./charts.js?v=51ede4cbfe";
-import { t } from "./i18n.js?v=51ede4cbfe";
+import { esc } from "./charts.js?v=0f06915566";
+import { t } from "./i18n.js?v=0f06915566";
 
 export const FIGURE = {
   male: { width: 581, height: 794, viewBox: "0 185 581 575", front: 166, back: 411, orientY: 206, sideY: 742, sideX: [138, 194, 383, 439] },

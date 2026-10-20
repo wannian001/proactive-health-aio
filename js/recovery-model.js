@@ -1,74 +1,152 @@
-// Four AI-rendered views, not a mesh. All overlays use recorded regional data.
-import { rv } from "./i18n.js?v=51ede4cbfe";
-import { t } from "./i18n.js?v=51ede4cbfe";
+// A cartoon 3D body that turns all the way round: MakeHuman's CC0 base mesh, rounded, given muscle lines and split into
+// the check-in regions by tools/make_body_mesh.py (models/recovery/MODEL.md), drawn with plain WebGL. All colours on
+// it come from recorded regional data.
+import { rv, t } from "./i18n.js?v=0f06915566";
 
-const VIEWS = ["angleFront", "angleLeft", "angleBack", "angleRight"];
-// Polygons are in normalized sprite-cell coordinates. Forearms, thighs and feet
-// remain unclassified because the check-in schema has no records for them.
-const FRONT = {
-  head: [[[.45,.02],[.58,.02],[.59,.15],[.55,.19],[.46,.19],[.44,.14]]],
-  right_upper_arm: [[[.37,.205],[.43,.22],[.43,.30],[.40,.37],[.34,.395],[.32,.36],[.34,.26]]],
-  left_upper_arm: [[[.60,.21],[.66,.20],[.69,.26],[.71,.36],[.68,.40],[.62,.37],[.60,.30]]],
-  torso: [[[.46,.18],[.55,.18],[.60,.205],[.615,.28],[.60,.34],[.60,.45],[.57,.47],[.425,.47],[.415,.34],[.43,.29],[.425,.22]]],
-  pelvis: [[[.425,.46],[.60,.46],[.63,.54],[.59,.575],[.52,.56],[.46,.57],[.40,.55]]],
-  right_calf: [[[.40,.72],[.47,.72],[.48,.80],[.46,.91],[.45,.94],[.405,.94],[.40,.84],[.385,.79]]],
-  left_calf: [[[.545,.72],[.62,.72],[.64,.79],[.62,.86],[.62,.94],[.575,.94],[.56,.88],[.54,.80]]],
+// the side of the person turned towards you at a yaw of 0°, 90°, 180°, 270° (a positive yaw turns their front to your right)
+const VIEWS = ["angleFront", "angleRight", "angleBack", "angleLeft"];
+const QUARTER = Math.PI / 2, TURN = 2 * Math.PI;
+const DRAG = 0.011;          // radians per CSS pixel dragged: about 570 px for a full turn
+const FOV = 20 * Math.PI / 180;
+// a cartoon: soft white, slate shorts, muscle lines a few shades darker, a dark outline (near black in the dark theme)
+const LOOK = {
+  light: { skin: [0.94, 0.945, 0.96], shorts: [0.38, 0.43, 0.54], outline: [0.30, 0.33, 0.40], ink: [0.30, 0.34, 0.44], rim: 0.12 },
+  dark: { skin: [0.90, 0.91, 0.94], shorts: [0.36, 0.41, 0.53], outline: [0.04, 0.05, 0.08], ink: [0.30, 0.34, 0.44], rim: 0.22 },
 };
-const BACK = {
-  head: [[[.45,.015],[.58,.015],[.59,.13],[.56,.175],[.46,.175],[.44,.13]]],
-  left_upper_arm: [[[.37,.19],[.43,.20],[.43,.29],[.40,.36],[.34,.39],[.32,.35],[.34,.25]]],
-  right_upper_arm: [[[.60,.19],[.66,.19],[.69,.26],[.71,.35],[.68,.39],[.62,.36],[.60,.29]]],
-  torso: [[[.46,.16],[.56,.16],[.60,.20],[.615,.28],[.60,.34],[.60,.43],[.425,.43],[.42,.34],[.43,.28],[.425,.20]]],
-  pelvis: [[[.425,.43],[.60,.43],[.64,.54],[.59,.57],[.51,.56],[.43,.57],[.40,.54]]],
-  left_calf: [[[.40,.70],[.47,.70],[.48,.79],[.46,.90],[.45,.94],[.405,.94],[.395,.85],[.38,.79]]],
-  right_calf: [[[.55,.70],[.62,.70],[.64,.79],[.625,.85],[.625,.94],[.58,.94],[.565,.88],[.55,.79]]],
-};
-const LEFT = {
-  head: [[[.43,.02],[.57,.02],[.59,.12],[.55,.17],[.45,.18],[.41,.13]]],
-  left_upper_arm: [[[.425,.195],[.49,.19],[.53,.23],[.54,.30],[.53,.37],[.50,.405],[.455,.365],[.425,.29]]],
-  torso: [[[.435,.175],[.49,.17],[.55,.20],[.59,.25],[.58,.42],[.565,.455],[.545,.44],[.54,.37],[.55,.29],[.52,.21]],[[.415,.30],[.435,.32],[.45,.40],[.45,.44],[.405,.44]]],
-  pelvis: [[[.405,.44],[.45,.44],[.48,.54],[.45,.575],[.40,.56]],[[.55,.44],[.57,.45],[.575,.57],[.55,.57]]],
-  left_calf: [[[.43,.71],[.515,.71],[.51,.78],[.48,.86],[.48,.94],[.43,.94],[.405,.83],[.405,.78]]],
-};
-const RIGHT = {
-  head: [[[.43,.02],[.57,.02],[.58,.13],[.54,.18],[.44,.18],[.40,.12]]],
-  right_upper_arm: [[[.48,.19],[.55,.185],[.59,.23],[.575,.30],[.54,.38],[.50,.40],[.465,.36],[.485,.28]]],
-  torso: [[[.45,.17],[.50,.17],[.49,.21],[.47,.26],[.47,.33],[.45,.41],[.44,.45],[.41,.44],[.41,.28],[.40,.235]],[[.575,.30],[.58,.34],[.575,.44],[.54,.45],[.55,.39]]],
-  pelvis: [[[.54,.44],[.575,.44],[.58,.53],[.555,.575],[.52,.56]],[[.41,.445],[.44,.445],[.43,.54],[.41,.55]]],
-  right_calf: [[[.435,.71],[.52,.71],[.545,.78],[.54,.84],[.515,.93],[.475,.94],[.465,.86],[.435,.79]]],
-};
-const REGIONS = [FRONT, LEFT, BACK, RIGHT];
-const PINS = [
-  { head:[.515,.10], torso:[.51,.32], pelvis:[.51,.51], right_upper_arm:[.37,.30], left_upper_arm:[.655,.30], right_calf:[.43,.81], left_calf:[.59,.81] },
-  { head:[.50,.10], torso:[.57,.33], pelvis:[.425,.50], left_upper_arm:[.48,.29], left_calf:[.46,.81] },
-  { head:[.515,.09], torso:[.51,.30], pelvis:[.51,.50], left_upper_arm:[.37,.29], right_upper_arm:[.655,.29], left_calf:[.43,.80], right_calf:[.59,.80] },
-  { head:[.49,.10], torso:[.43,.32], pelvis:[.555,.50], right_upper_arm:[.53,.29], right_calf:[.50,.81] },
-];
+const OUTLINE = 1.6;  // CSS pixels
 
-export function viewIndex(index) { return ((index % 4) + 4) % 4; }
-function inside(x, y, polygon) {
-  let hit = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i], [xj, yj] = polygon[j];
-    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) hit = !hit;
+export function viewIndex(yaw) { return ((Math.round(yaw / QUARTER) % 4) + 4) % 4; }
+
+// "HAB2", uint32 header length, JSON header, then int16 positions, int8 normals, uint8 occlusion + cloth, uint8 region shares,
+// uint16 triangles; then the muscle lines' int16 positions and uint16 triangles, each block 4-byte aligned (tools/make_body_mesh.py)
+export function parseBody(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (String.fromCharCode(...bytes.subarray(0, 4)) !== "HAB2") throw Error("Not a body file");
+  const length = new DataView(buffer).getUint32(4, true);
+  const header = JSON.parse(new TextDecoder().decode(bytes.subarray(8, 8 + length)));
+  const n = header.vertices;
+  let at = 8 + length;
+  const quant = new Int16Array(buffer, at, n * 3); at += n * 6; at += (4 - at % 4) % 4;
+  const normals = new Int8Array(buffer, at, n * 4); at += n * 4;
+  const extra = new Uint8Array(buffer, at, n * 4); at += n * 4;
+  const shares = new Uint8Array(buffer, at, n * 8); at += n * 8;
+  const indices = new Uint16Array(buffer, at, header.triangles * 3); at += header.triangles * 6;
+  let lines = null;
+  if (header.lines) {
+    at += (4 - at % 4) % 4;
+    const quant = new Int16Array(buffer, at, header.lines.vertices * 3); at += header.lines.vertices * 6; at += (4 - at % 4) % 4;
+    lines = { quant, indices: new Uint16Array(buffer, at, header.lines.triangles * 3) };
   }
-  return hit;
+  const positions = new Float32Array(n * 3);
+  let radius = 0;
+  for (let i = 0; i < n * 3; i++) positions[i] = header.center[i % 3] + quant[i] / 32767 * header.extent[i % 3];
+  for (let i = 0; i < n; i++) radius = Math.max(radius, Math.hypot(positions[i * 3], positions[i * 3 + 2]));
+  return { header, quant, normals, extra, shares, indices, positions, radius, lines };
 }
-export function regionAt(x, y, angle = 0) {
-  return Object.entries(REGIONS[viewIndex(angle)]).find(([, polygons]) => polygons.some(p => inside(x, y, p)))?.[0] || null;
-}
+
 let asset;
 function loadAsset() {
-  if (!asset) asset = new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image); image.onerror = reject;
-    image.src = new URL("../models/recovery/body-illustration.png", import.meta.url).href;
-  }).catch(error => { asset = null; throw error; });
+  if (!asset) asset = fetch(new URL("../models/recovery/body.bin", import.meta.url))
+    .then(r => { if (!r.ok) throw Error(`HTTP ${r.status}`); return r.arrayBuffer(); })
+    .then(parseBody)
+    .catch(error => { asset = null; throw error; });
   return asset;
 }
 
+// nearest triangle along a ray, in the body's own coordinates (Möller–Trumbore)
+function raycast(body, origin, dir) {
+  const P = body.positions, I = body.indices;
+  let best = null;
+  for (let k = 0; k < I.length; k += 3) {
+    const a = I[k] * 3, b = I[k + 1] * 3, c = I[k + 2] * 3;
+    const e1x = P[b] - P[a], e1y = P[b + 1] - P[a + 1], e1z = P[b + 2] - P[a + 2];
+    const e2x = P[c] - P[a], e2y = P[c + 1] - P[a + 1], e2z = P[c + 2] - P[a + 2];
+    const px = dir[1] * e2z - dir[2] * e2y, py = dir[2] * e2x - dir[0] * e2z, pz = dir[0] * e2y - dir[1] * e2x;
+    const det = e1x * px + e1y * py + e1z * pz;
+    if (Math.abs(det) < 1e-12) continue;
+    const inv = 1 / det, tx = origin[0] - P[a], ty = origin[1] - P[a + 1], tz = origin[2] - P[a + 2];
+    const u = (tx * px + ty * py + tz * pz) * inv;
+    if (u < 0 || u > 1) continue;
+    const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x;
+    const v = (dir[0] * qx + dir[1] * qy + dir[2] * qz) * inv;
+    if (v < 0 || u + v > 1) continue;
+    const d = (e2x * qx + e2y * qy + e2z * qz) * inv;
+    if (d > 1e-6 && (!best || d < best.d)) best = { d, k, u, v };
+  }
+  return best;
+}
+
+const VERTEX = `
+attribute vec3 aPos; attribute vec4 aNormal; attribute vec4 aExtra; attribute vec4 aRegA; attribute vec4 aRegB;
+uniform vec3 uCenter, uExtent; uniform mat3 uTurn; uniform mat4 uCamera; uniform float uOutline;
+varying vec3 vNormal, vWorld; varying float vCloth, vY, vOcclusion; varying vec4 vRegA, vRegB;
+void main() {
+  vec3 p = uCenter + aPos * uExtent;
+  vY = p.y; vNormal = uTurn * aNormal.xyz; vOcclusion = aExtra.x; vCloth = aExtra.y;
+  vRegA = aRegA; vRegB = aRegB;
+  vWorld = uTurn * (p + aNormal.xyz * uOutline);  // the outline pass draws the back faces a little bigger
+  gl_Position = uCamera * vec4(vWorld, 1.0);
+}`;
+// drawn like a cartoon: soft flat tones (shadow, light, a highlight), shadows a little cool; the region tints are the
+// surface colour. The same program draws the outline (uOutline > 0) and the muscle lines (uOutline < 0)
+const FRAGMENT = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec3 vNormal, vWorld; varying float vCloth, vY, vOcclusion; varying vec4 vRegA, vRegB;
+uniform vec3 uEye, uSkin, uShorts, uLineColor; uniform float uWaist, uHem, uRim, uOutline; uniform vec4 uTint[8];
+void main() {
+  if (uOutline > 0.0) { gl_FragColor = vec4(uLineColor, 1.0); return; }
+  if (uOutline < 0.0) { gl_FragColor = vec4(uLineColor, 0.72); return; }  // a muscle line, laid over the skin
+  // each region's colour up to the middle of its soft edge
+  vec4 a = smoothstep(0.3, 0.7, vRegA), b = smoothstep(0.3, 0.7, vRegB);
+  vec4 tint = a.x * uTint[0] + a.y * uTint[1] + a.z * uTint[2] + a.w * uTint[3]
+            + b.x * uTint[4] + b.y * uTint[5] + b.z * uTint[6] + b.w * uTint[7];
+  vec3 n = normalize(vNormal);
+  if (!gl_FrontFacing) n = -n;
+  vec3 v = normalize(uEye - vWorld);
+  float cloth = smoothstep(0.35, 0.65, vCloth);
+  float shorts = cloth * smoothstep(uHem - 0.004, uHem + 0.004, vY) * (1.0 - smoothstep(uWaist - 0.004, uWaist + 0.004, vY));
+  float band = shorts * smoothstep(uWaist - 0.040, uWaist - 0.036, vY);
+  vec3 surface = mix(uSkin, uShorts, shorts) * (1.0 - 0.12 * band);
+  surface = surface * (1.0 - tint.a) + tint.rgb;
+  float ndl = dot(n, normalize(vec3(-0.5, 0.9, 0.7)));
+  float lit = smoothstep(-0.12, 0.30, ndl), top = smoothstep(0.55, 0.75, ndl);
+  float shade = (mix(0.76, 0.93, lit) + 0.06 * top) * mix(0.86, 1.0, vOcclusion);
+  vec3 color = surface * shade * mix(vec3(0.92, 0.95, 1.02), vec3(1.0), lit);
+  color += pow(1.0 - max(dot(n, v), 0.0), 3.0) * uRim;
+  gl_FragColor = vec4(min(color, vec3(1.0)), 1.0);
+}`;
+
+function compile(gl) {
+  const shader = (type, source) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, source); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw Error(gl.getShaderInfoLog(s) || "Shader failed");
+    return s;
+  };
+  const program = gl.createProgram();
+  gl.attachShader(program, shader(gl.VERTEX_SHADER, VERTEX));
+  gl.attachShader(program, shader(gl.FRAGMENT_SHADER, FRAGMENT));
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(program) || "Link failed");
+  return program;
+}
+
+// a CSS colour (any syntax the browser knows) as sRGB 0..1 and its alpha
+const swatch = document.createElement("canvas");
+swatch.width = swatch.height = 1;
+function rgba(css) {
+  const c = swatch.getContext("2d", { willReadFrequently: true });
+  c.clearRect(0, 0, 1, 1); c.fillStyle = "#000"; c.fillStyle = css || "#000"; c.fillRect(0, 0, 1, 1);
+  const [r, g, b, a] = c.getImageData(0, 0, 1, 1).data;
+  return [r / 255, g / 255, b / 255, a / 255];
+}
+
 export async function mountBody(host, { regions, levels, known, trained, onSelect, onUnsupported }) {
-  let disposed = false, resize, appearance, frame = 0;
+  let disposed = false, resize, appearance, frame = 0, gl, lose;
   const cleanup = [];
   const detach = new MutationObserver(() => { if (!host.isConnected) dispose(); });
   detach.observe(host.closest("main") || document.body, { childList: true });
@@ -76,109 +154,253 @@ export async function mountBody(host, { regions, levels, known, trained, onSelec
     if (disposed) return;
     disposed = true; cancelAnimationFrame(frame); detach.disconnect(); resize?.disconnect(); appearance?.disconnect();
     cleanup.forEach(fn => fn());
+    lose?.loseContext();
   }
   try {
-    const image = await loadAsset();
+    const body = await loadAsset();
     if (disposed || !host.isConnected) { dispose(); return null; }
-    const canvas = document.createElement("canvas"), ctx = canvas.getContext("2d");
-    if (!ctx) throw Error("Canvas unavailable");
+    const canvas = document.createElement("canvas");
+    gl = canvas.getContext("webgl", { antialias: true, alpha: true, premultipliedAlpha: true });
+    if (!gl) throw Error("WebGL unavailable");
+    lose = gl.getExtension("WEBGL_lose_context");
     canvas.tabIndex = 0; canvas.setAttribute("role", "img");
     const badge = document.createElement("span"); badge.className = "ov-angle-label"; badge.setAttribute("aria-live", "polite");
+    const pin = document.createElement("span"); pin.className = "ov-body-pin"; pin.hidden = true;
+    const floor = document.createElement("span"); floor.className = "ov-body-floor";
     const label = document.createElement("span"); label.className = "ov-body-label"; label.hidden = true;
-    host.replaceChildren(canvas, badge, label);
-    const cellW = image.naturalWidth / 2, cellH = image.naturalHeight / 2;
-    const base = document.createElement("canvas"), overlay = document.createElement("canvas");
-    base.width = overlay.width = cellW; base.height = overlay.height = cellH;
-    const body = base.getContext("2d", { willReadFrequently: true }), ink = overlay.getContext("2d");
-    if (!body || !ink) throw Error("Canvas unavailable");
-    let knownRegions = null, annotations = {};
-    let angle = 0, view = "sore", selected = "", box = { x:0, y:0, size:1 }, alpha;
-    const loadView = () => {
-      body.clearRect(0, 0, cellW, cellH);
-      body.drawImage(image, (angle % 2) * cellW, Math.floor(angle / 2) * cellH, cellW, cellH, 0, 0, cellW, cellH);
-      alpha = body.getImageData(0, 0, cellW, cellH).data;
-      badge.textContent = rv(VIEWS[angle]);
-      canvas.setAttribute("aria-label", `${rv("bodyAria")} ${rv(VIEWS[angle])}`);
+    host.replaceChildren(floor, canvas, badge, pin, label);
+    const H = body.header, R = H.regions;
+
+    let program, loc, bindBody, bindLines;
+    function setup() {
+      program = compile(gl);
+      gl.useProgram(program);
+      loc = Object.fromEntries(["uCenter", "uExtent", "uTurn", "uCamera", "uTint", "uEye", "uSkin", "uShorts", "uWaist", "uHem", "uRim", "uOutline", "uLineColor"]
+        .map(name => [name, gl.getUniformLocation(program, name)]));
+      const buffer = (data, target = gl.ARRAY_BUFFER) => { const b = gl.createBuffer(); gl.bindBuffer(target, b); gl.bufferData(target, data, gl.STATIC_DRAW); return b; };
+      const at = Object.fromEntries(["aPos", "aNormal", "aExtra", "aRegA", "aRegB"].map(name => [name, gl.getAttribLocation(program, name)]));
+      const own = { pos: buffer(body.quant), normal: buffer(body.normals), extra: buffer(body.extra), shares: buffer(body.shares),
+        index: buffer(body.indices, gl.ELEMENT_ARRAY_BUFFER) };
+      const ink = body.lines && { pos: buffer(body.lines.quant), index: buffer(body.lines.indices, gl.ELEMENT_ARRAY_BUFFER) };
+      const point = (name, b, size, type, stride = 0, offset = 0) => {
+        gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.enableVertexAttribArray(at[name]); gl.vertexAttribPointer(at[name], size, type, true, stride, offset);
+      };
+      bindBody = () => {
+        point("aPos", own.pos, 3, gl.SHORT); point("aNormal", own.normal, 4, gl.BYTE); point("aExtra", own.extra, 4, gl.UNSIGNED_BYTE);
+        point("aRegA", own.shares, 4, gl.UNSIGNED_BYTE, 8, 0); point("aRegB", own.shares, 4, gl.UNSIGNED_BYTE, 8, 4);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, own.index);
+      };
+      bindLines = ink && (() => {  // only positions; the rest held constant
+        point("aPos", ink.pos, 3, gl.SHORT);
+        for (const name of ["aNormal", "aExtra", "aRegA", "aRegB"]) { gl.disableVertexAttribArray(at[name]); gl.vertexAttrib4f(at[name], 0, 0, 0, 0); }
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ink.index);
+      });
+      gl.uniform3fv(loc.uCenter, H.center); gl.uniform3fv(loc.uExtent, H.extent);
+      gl.uniform1f(loc.uWaist, H.shorts.waist); gl.uniform1f(loc.uHem, H.shorts.hem);
+      gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.clearColor(0, 0, 0, 0);
+    }
+    setup();
+    const lost = event => { event.preventDefault(); cancelAnimationFrame(frame); frame = 0; };
+    const restored = () => { setup(); paint(); };
+    canvas.addEventListener("webglcontextlost", lost); canvas.addEventListener("webglcontextrestored", restored);
+    cleanup.push(() => { canvas.removeEventListener("webglcontextlost", lost); canvas.removeEventListener("webglcontextrestored", restored); });
+
+    let knownRegions = null, annotations = {}, view = "sore", selected = "", colors = null;
+    let yaw = 0, spin = 0, tween = null, last = 0, chosen = null;  // chosen: the point tapped, kept while its region stays selected
+    let camera = { eye: [0, 0, 1], width: 0, height: 0, tan: Math.tan(FOV / 2) };
+    // how far back the camera stands so the whole body fits at every angle, the same size all the way round: its
+    // height with 8 px above and below, its widest turn with a little air at the sides
+    const fit = (width, height) => {
+      const P = body.positions, cy = H.center[1], up = camera.tan * (1 - 16 / height), across = camera.tan * width / height * 0.92;
+      let d = 0;
+      for (let i = 0; i < P.length; i += 3) {
+        const r = Math.hypot(P[i], P[i + 2]);
+        d = Math.max(d, Math.abs(P[i + 1] - cy) / up + r, r / across + r);
+      }
+      return d;
     };
-    function draw() {
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const readColors = () => {
+      const style = getComputedStyle(host), v = name => style.getPropertyValue(name).trim();
+      const [r, g, b] = rgba(v("--surface"));
+      colors = { axis: rgba(v("--c-axis")), trained: rgba(v("--c-exercise")), sore: [1, 2, 3].map(i => rgba(v(`--c-sore-${i}`))),
+        look: LOOK[0.2126 * r + 0.7152 * g + 0.0722 * b < 0.4 ? "dark" : "light"] };
+    };
+    const turn = () => { const c = Math.cos(yaw), s = Math.sin(yaw); return [c, 0, -s, 0, 1, 0, s, 0, c]; };
+    // body coordinates -> the room, and back
+    const toRoom = (p, m = turn()) => [m[0] * p[0] + m[3] * p[1] + m[6] * p[2], m[1] * p[0] + m[4] * p[1] + m[7] * p[2], m[2] * p[0] + m[5] * p[1] + m[8] * p[2]];
+    const toBody = (p, m = turn()) => [m[0] * p[0] + m[1] * p[1] + m[2] * p[2], m[3] * p[0] + m[4] * p[1] + m[5] * p[2], m[6] * p[0] + m[7] * p[1] + m[8] * p[2]];
+    const ray = (x, y) => {  // CSS pixels in the canvas -> a ray in the room
+      const nx = x / camera.width * 2 - 1, ny = 1 - y / camera.height * 2;
+      const d = [nx * camera.tan * camera.width / camera.height, ny * camera.tan, -1], l = Math.hypot(...d);
+      return d.map(c => c / l);
+    };
+    const project = p => {  // a point in the room -> CSS pixels, or null behind the camera
+      const z = camera.eye[2] - p[2];
+      if (z <= 0) return null;
+      return [(p[0] / (z * camera.tan * camera.width / camera.height) + 1) / 2 * camera.width,
+        (1 - (p[1] - camera.eye[1]) / (z * camera.tan)) / 2 * camera.height];
+    };
+    const shown = (point, normal) => {  // faces the camera and nothing of the body is in front of it
+      const room = toRoom(point), to = camera.eye.map((c, i) => c - room[i]), dist = Math.hypot(...to);
+      if (toRoom(normal).reduce((s, c, i) => s + c * to[i], 0) / dist < 0.08) return false;
+      const hit = raycast(body, toBody(camera.eye), toBody(to.map(c => -c / dist)));
+      return !hit || hit.d > dist - 0.012;
+    };
+    const tint = region => {
+      if (!regions.includes(region)) return [0, 0, 0, 0];
+      const value = view === "trained" ? (trained.has(region) ? "trained" : null) : known && (!knownRegions || knownRegions.includes(region)) ? (levels[region] || 0) : null;
+      if (value === 0) return [0, 0, 0, 0];  // a recorded zero keeps the neutral grey
+      const [r, g, b, a] = value == null ? colors.axis : value === "trained" ? colors.trained : colors.sore[value - 1];
+      const alpha = a * (value == null ? 0.28 : value === "trained" ? 0.6 : [0, 0.42, 0.66, 0.85][value]);
+      return [r * alpha, g * alpha, b * alpha, alpha];
+    };
+
+    function draw(now) {
       frame = 0;
-      if (disposed || !host.isConnected) return;
+      if (disposed || !host.isConnected || gl.isContextLost()) return;
+      const dt = last ? Math.min(now - last, 64) : 16;
+      last = now;
+      if (tween) {
+        const k = Math.min(1, (now - tween.start) / tween.ms), ease = 1 - (1 - k) ** 3;
+        yaw = tween.from + (tween.to - tween.from) * ease;
+        if (k >= 1) tween = null;
+      } else if (spin) {
+        yaw += spin * dt; spin *= Math.exp(-dt / 260);
+        if (Math.abs(spin) < 0.00004) spin = 0;
+      }
       const { width, height } = host.getBoundingClientRect();
       if (width < 1 || height < 1) return;
-      const dpr = Math.min(devicePixelRatio || 1, 2);
-      canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // Each source cell has broad transparent side margins. Its full height
-      // remains fixed across views and fit never crops the figure on mobile.
-      const size = Math.min(height - 16, width / .56);
-      box = { x: (width - size) / 2, y: 8, size };
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(base, box.x, box.y, size, size);
-      ink.clearRect(0, 0, cellW, cellH);
-      const style = getComputedStyle(host);
-      for (const [region, polygons] of Object.entries(REGIONS[angle])) {
-        if (!regions.includes(region)) continue;
-        const value = view === "trained" ? (trained.has(region) ? "trained" : null) : known && (!knownRegions || knownRegions.includes(region)) ? (levels[region] || 0) : null;
-        // Preserve the neutral source shading for a recorded zero.
-        if (value === 0) continue;
-        ink.save(); ink.filter = "blur(5px)"; ink.globalAlpha = value == null ? .28 : value === "trained" ? .55 : [.0,.32,.57,.78][value];
-        ink.fillStyle = style.getPropertyValue(value == null ? "--c-axis" : value === "trained" ? "--c-exercise" : `--c-sore-${value}`).trim();
-        polygons.forEach(polygon => {
-          ink.beginPath(); polygon.forEach(([x,y], i) => i ? ink.lineTo(x * cellW, y * cellH) : ink.moveTo(x * cellW, y * cellH));
-          ink.closePath(); ink.fill();
-        });
-        ink.restore();
+      const dpr = Math.min(devicePixelRatio || 1, 2), w = Math.round(width * dpr), h = Math.round(height * dpr);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      if (camera.width !== width || camera.height !== height) camera = { ...camera, width, height, eye: [0, H.center[1], fit(width, height)] };
+      const aspect = width / height, distance = camera.eye[2], f = 1 / camera.tan;
+      const near = distance - body.radius - 0.1, far = distance + body.radius + 0.1;
+      const a = (far + near) / (near - far), b = 2 * far * near / (near - far);
+      // perspective x the camera's offset (0, -centre, -distance); column-major
+      gl.uniformMatrix4fv(loc.uCamera, false, [f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, a, -1,
+        0, -H.center[1] * f, -distance * a + b, distance]);
+      gl.uniformMatrix3fv(loc.uTurn, false, turn());
+      gl.uniform3fv(loc.uEye, camera.eye);
+      gl.uniform4fv(loc.uTint, R.flatMap(tint));
+      gl.uniform3fv(loc.uSkin, colors.look.skin); gl.uniform3fv(loc.uShorts, colors.look.shorts); gl.uniform1f(loc.uRim, colors.look.rim);
+      gl.viewport(0, 0, w, h);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      // the outline: the back faces pushed out by a pixel and a half, then the body over them
+      gl.uniform3fv(loc.uLineColor, colors.look.outline);
+      bindBody();
+      gl.cullFace(gl.FRONT); gl.uniform1f(loc.uOutline, OUTLINE * 2 * camera.tan * distance / height);
+      gl.drawElements(gl.TRIANGLES, body.indices.length, gl.UNSIGNED_SHORT, 0);
+      gl.cullFace(gl.BACK); gl.uniform1f(loc.uOutline, 0);
+      gl.drawElements(gl.TRIANGLES, body.indices.length, gl.UNSIGNED_SHORT, 0);
+      if (bindLines) {  // the muscle lines over the skin, a touch transparent, nudged towards the camera
+        bindLines();
+        gl.uniform3fv(loc.uLineColor, colors.look.ink); gl.uniform1f(loc.uOutline, -1);
+        gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+        gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(-2, -2);
+        gl.drawElements(gl.TRIANGLES, body.lines.indices.length, gl.UNSIGNED_SHORT, 0);
+        gl.disable(gl.POLYGON_OFFSET_FILL); gl.disable(gl.BLEND); gl.enable(gl.CULL_FACE);
       }
-      ink.save(); ink.globalCompositeOperation = "destination-in"; ink.drawImage(base, 0, 0); ink.restore();
-      ctx.drawImage(overlay, box.x, box.y, size, size);
-      const pin = PINS[angle][selected];
-      label.hidden = !pin;
-      if (pin) {
-        const x = box.x + pin[0] * size, y = box.y + pin[1] * size;
-        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
-        ctx.strokeStyle = style.getPropertyValue("--accent").trim() || "#3174bb"; ctx.lineWidth = 2; ctx.stroke();
+
+      const ground = project([0, 0, 0]), side = project([0.3, 0, 0]);
+      if (ground && side) {
+        floor.style.left = `${ground[0]}px`; floor.style.top = `${ground[1]}px`; floor.style.width = `${(side[0] - ground[0]) * 2}px`;
+      }
+      const index = viewIndex(yaw);
+      if (badge.textContent !== rv(VIEWS[index])) {
+        badge.textContent = rv(VIEWS[index]);
+        canvas.setAttribute("aria-label", `${rv("bodyAria")} ${rv(VIEWS[index])}`);
+      }
+      // the marker: the tapped point while it shows, else the region's point that faces you most
+      let mark = null;
+      if (selected && H.anchors[selected]) {
+        const m = turn();
+        const facing = H.anchors[selected].map(a => ({ point: a.slice(0, 3), normal: a.slice(3) }))
+          .sort((p, q) => toRoom(q.normal, m)[2] - toRoom(p.normal, m)[2]).slice(0, 3);
+        const candidates = chosen?.region === selected ? [chosen, ...facing] : facing;
+        mark = candidates.find(c => shown(c.point, c.normal)) || null;
+      }
+      const at = mark && project(toRoom(mark.point));
+      pin.hidden = label.hidden = !at;
+      if (at) {
+        const [x, y] = at;
+        pin.style.left = `${x}px`; pin.style.top = `${y}px`;
         const value = known ? t(`sore.level.${levels[selected] || 0}`) : rv("unknown");
         label.textContent = view === "sore" && annotations[selected] ? annotations[selected] : `${t(`sore.region.${selected}`)} · ${view === "trained" ? (trained.has(selected) ? rv("trainingLegend") : rv("unknown")) : value}`;
         label.style.left = `${Math.max(6, Math.min(width - 150, x + 14))}px`;
         label.style.top = `${Math.max(6, y - 38)}px`;
       }
+      if (tween || spin) paint(); else last = 0;
     }
     const paint = () => { if (!disposed && !frame) frame = requestAnimationFrame(draw); };
-    const rotate = step => { angle = viewIndex(angle + Math.sign(step)); loadView(); paint(); };
+    const turnTo = target => {
+      spin = 0;
+      if (motion.matches) { yaw = target; tween = null; } else tween = { from: yaw, to: target, start: performance.now(), ms: 480 };
+      paint();
+    };
+    const rotate = step => turnTo(Math.round((tween ? tween.to : yaw) / QUARTER + Math.sign(step)) * QUARTER);
+    readColors();
     resize = new ResizeObserver(paint); resize.observe(host);
-    appearance = new MutationObserver(paint); appearance.observe(document.documentElement, { attributes:true, attributeFilter:["data-mode", "class"] });
-    const media = matchMedia("(prefers-color-scheme: dark)"); media.addEventListener("change", paint);
-    cleanup.push(() => media.removeEventListener("change", paint));
+    const restyle = () => { readColors(); paint(); };
+    appearance = new MutationObserver(restyle); appearance.observe(document.documentElement, { attributes: true, attributeFilter: ["data-mode", "class"] });
+    const media = matchMedia("(prefers-color-scheme: dark)"); media.addEventListener("change", restyle);
+    cleanup.push(() => media.removeEventListener("change", restyle));
+
     let drag;
     canvas.onpointerdown = event => {
       if (!event.isPrimary || event.button !== 0) return;
-      drag = { id:event.pointerId, x:event.clientX, y:event.clientY, moved:false };
+      tween = null; spin = 0;
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, yaw, moved: false, at: event.timeStamp, speed: 0 };
       canvas.setPointerCapture(event.pointerId);
     };
     canvas.onpointermove = event => {
-      if (drag?.id === event.pointerId && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 8) drag.moved = true;
+      if (drag?.id !== event.pointerId) return;
+      const dx = event.clientX - drag.x;
+      if (!drag.moved && Math.hypot(dx, event.clientY - drag.y) > 6) drag.moved = true;
+      if (!drag.moved) return;
+      const next = drag.yaw + dx * DRAG, gap = Math.max(1, event.timeStamp - drag.at);
+      drag.speed = 0.6 * drag.speed + 0.4 * (next - yaw) / gap;  // radians per millisecond, smoothed
+      drag.at = event.timeStamp; yaw = next; paint();
     };
     canvas.onpointercancel = () => { drag = null; };
     canvas.onpointerup = event => {
       if (!drag || event.pointerId !== drag.id) return;
-      const { x, y, moved } = drag; drag = null;
+      const { x, y, moved, speed, at } = drag; drag = null;
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-      const dx = event.clientX - x, dy = event.clientY - y;
-      if (moved) { if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) rotate(Math.sign(dx)); return; }
-      const rect = canvas.getBoundingClientRect(), px = (event.clientX - rect.left - box.x) / box.size, py = (event.clientY - rect.top - box.y) / box.size;
-      if (px < 0 || px >= 1 || py < 0 || py >= 1 || alpha[(Math.floor(py * cellH) * cellW + Math.floor(px * cellW)) * 4 + 3] < 80) return;
-      const region = regionAt(px, py, angle);
-      if (region && regions.includes(region)) onSelect(region); else onUnsupported();
+      if (moved) {  // let it run on a little, unless the finger stopped before letting go
+        if (!motion.matches && event.timeStamp - at < 80) { spin = Math.max(-0.006, Math.min(0.006, speed)); last = 0; paint(); }
+        return;
+      }
+      const rect = canvas.getBoundingClientRect(), dir = ray(x - rect.left, y - rect.top);
+      const hit = raycast(body, toBody(camera.eye), toBody(dir));
+      if (!hit) return;
+      const I = body.indices, S = body.shares, P = body.positions, w = [1 - hit.u - hit.v, hit.u, hit.v];
+      const share = R.map((_, r) => w.reduce((s, wk, j) => s + wk * S[I[hit.k + j] * 8 + r], 0));
+      const region = R[share.indexOf(Math.max(...share))];
+      if (region !== "other" && regions.includes(region)) {
+        const point = [0, 1, 2].map(c => w.reduce((s, wk, j) => s + wk * P[I[hit.k + j] * 3 + c], 0));
+        const e1 = [0, 1, 2].map(c => P[I[hit.k + 1] * 3 + c] - P[I[hit.k] * 3 + c]), e2 = [0, 1, 2].map(c => P[I[hit.k + 2] * 3 + c] - P[I[hit.k] * 3 + c]);
+        let normal = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+        const toEye = toBody(camera.eye).map((c, i) => c - point[i]);
+        const length = Math.hypot(...normal) * (normal.reduce((s, c, i) => s + c * toEye[i], 0) < 0 ? -1 : 1);
+        normal = normal.map(c => c / length);
+        chosen = { region, point, normal };
+        onSelect(region);
+      } else onUnsupported();
     };
     canvas.onkeydown = event => {
       if (["ArrowLeft", "ArrowRight"].includes(event.key)) { event.preventDefault(); rotate(event.key === "ArrowLeft" ? -1 : 1); }
     };
     cleanup.push(() => { canvas.onpointerdown = canvas.onpointermove = canvas.onpointerup = canvas.onpointercancel = canvas.onkeydown = null; });
-    loadView(); paint();
+    paint();
     return {
       rotate,
-      reset() { angle = 0; loadView(); paint(); },
-      update(next) { levels = next.levels; known = next.known; knownRegions = next.knownRegions; annotations = next.annotations || {}; view = next.view; selected = next.selected; paint(); },
+      reset() { turnTo(Math.round(yaw / TURN) * TURN); },
+      update(next) {
+        levels = next.levels; known = next.known; knownRegions = next.knownRegions; annotations = next.annotations || {}; view = next.view; selected = next.selected;
+        if (chosen?.region !== selected) chosen = null;
+        paint();
+      },
       dispose,
     };
   } catch {

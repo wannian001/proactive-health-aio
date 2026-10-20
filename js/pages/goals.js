@@ -2,10 +2,10 @@
 // or scores. A goal can be set right here (Edit, or Set one for a plan not set yet): the change is a line in
 // goals.jsonl laid over healthaio.toml, and every page is computed again. An assistant's proposals wait at the top
 // until you accept or decline them. The online demo has no server, so there the form shows but does not save.
-import { isStatic, post } from "../api.js?v=51ede4cbfe";
-import { draw, esc, keptDots } from "../charts.js?v=51ede4cbfe";
-import { day, dur, getLang, inSentence, num, shortDay, t } from "../i18n.js?v=51ede4cbfe";
-import { icon } from "../icons.js?v=51ede4cbfe";
+import { isStatic, post } from "../api.js?v=0f06915566";
+import { draw, esc, keptDots } from "../charts.js?v=0f06915566";
+import { day, dur, getLang, inSentence, num, shortDay, t } from "../i18n.js?v=0f06915566";
+import { icon } from "../icons.js?v=0f06915566";
 
 const DOMAIN_ICON = { sleep: "sleep", exercise: "exercise", food: "food", body: "heart", screens: "screen" };
 const SOURCE = { plan: "goals.src.plan", guideline: "goals.src.who", rule: "goals.src.rule" };

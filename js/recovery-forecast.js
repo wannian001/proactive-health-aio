@@ -1,7 +1,7 @@
-import { esc } from "./charts.js?v=51ede4cbfe";
-import { day, num, t, clock } from "./i18n.js?v=51ede4cbfe";
-import { icon } from "./icons.js?v=51ede4cbfe";
-import { rv } from "./i18n.js?v=51ede4cbfe";
+import { esc } from "./charts.js?v=0f06915566";
+import { day, num, t, clock } from "./i18n.js?v=0f06915566";
+import { icon } from "./icons.js?v=0f06915566";
+import { rv } from "./i18n.js?v=0f06915566";
 
 export function forecastText(f, kind) {
   if (!f) return rv("fc_missing_current");

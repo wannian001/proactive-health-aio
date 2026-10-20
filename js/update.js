@@ -1,8 +1,8 @@
 // The update notice: when GitHub has a newer release than this copy (the server asks once a day), one line above the
 // page says so. On this computer's own page it can install it; the server then restarts itself and the page reloads.
 // Elsewhere (a phone, another computer) it says where to update. "Later" hides it until the next version.
-import { esc } from "./charts.js?v=51ede4cbfe";
-import { t } from "./i18n.js?v=51ede4cbfe";
+import { esc } from "./charts.js?v=0f06915566";
+import { t } from "./i18n.js?v=0f06915566";
 
 const LATER = "healthaio.update.later";
 let info = null;

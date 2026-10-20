@@ -3,8 +3,8 @@
 // order without scripts, and the tests see it); once a page is drawn, mountInfo moves each one into its card's i. A
 // card that held nothing but the explanation goes away, and its i sits by the page title. Folds with other summaries
 // (the last 14 days, every time, importing) are content and stay as they are.
-import { t } from "./i18n.js?v=51ede4cbfe";
-import { icon } from "./icons.js?v=51ede4cbfe";
+import { t } from "./i18n.js?v=0f06915566";
+import { icon } from "./icons.js?v=0f06915566";
 
 let pop = null;
 const close = () => { if (!pop) return; pop.owner?.setAttribute("aria-expanded", "false"); pop.remove(); pop = null; };

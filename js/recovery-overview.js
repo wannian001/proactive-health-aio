@@ -1,7 +1,7 @@
-import { esc } from "./charts.js?v=51ede4cbfe";
-import { clock, day, dur, num, rv, t, toDate, wtype } from "./i18n.js?v=51ede4cbfe";
-import { mountBody } from "./recovery-model.js?v=51ede4cbfe";
-import { forecastHtml, forecastText, forecastTarget } from "./recovery-forecast.js?v=51ede4cbfe";
+import { esc } from "./charts.js?v=0f06915566";
+import { clock, day, dur, num, rv, t, toDate, wtype } from "./i18n.js?v=0f06915566";
+import { mountBody } from "./recovery-model.js?v=0f06915566";
+import { forecastHtml, forecastText, forecastTarget } from "./recovery-forecast.js?v=0f06915566";
 
 // All figures below come from existing records. No rescaling and no synthetic ETA. Nothing is written from here:
 // choosing a region and a level fills in the "How you are right now" card below, which saves.
@@ -89,7 +89,7 @@ export function overviewHtml(p) {
       <div class="ov-legend"><span class="ov-sore-legend"><i class="ov-yellow-key"></i>${rv("light")} → ${rv("heavy")}</span><span class="ov-sore-legend"><i class="ov-none-key"></i>${rv("none")}</span><span class="ov-trained-legend" hidden><i class="ov-trained-key"></i>${rv("trainingLegend")}</span><span><i class="ov-unknown-key"></i>${rv("unknown")}</span></div>
       <div class="ov-region-picker"><label for="ov-region">${rv("select")}</label><select id="ov-region"><option value="">${rv("choose")}</option>${p.regions.map(r => `<option value="${esc(r)}">${t(`sore.region.${r}`)}</option>`).join("")}</select></div>
       <div class="ov-selection" aria-live="polite"><p>${rv("selectPrompt")}</p></div>
-      <details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><a href="models/recovery/ILLUSTRATION.md" target="_blank" rel="noopener">${rv("modelCredit")} ↗</a></details>
+      <details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><a href="models/recovery/MODEL.md" target="_blank" rel="noopener">${rv("modelCredit")} ↗</a></details>
     </section>
     <div class="ov-states"><section class="ov-metric ov-sore-card">${soreCard(p)}</section><section class="ov-metric ov-energy-card">${energyCard(p)}</section>${focusCard(p)}</div>
     </div></section>`;

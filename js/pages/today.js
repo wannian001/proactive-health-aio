@@ -1,13 +1,13 @@
 // Today: one card for the morning (the day ring, how recovered you are, what is on, tonight, and what to adjust), then
 // every other part of your health in one line each. Numbers and a state only: the sentences that explain them live on
 // each part's own page, one click away, so a first look takes seconds.
-import { dayRing, draw, esc, RING_CATS, spark } from "../charts.js?v=51ede4cbfe";
-import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js?v=51ede4cbfe";
-import { COLOR, icon, STATE_ICON } from "../icons.js?v=51ede4cbfe";
-import { worseLine } from "./drain.js?v=51ede4cbfe";
-import { helping } from "./effects.js?v=51ede4cbfe";
-import { nowItem, nowLine, quietSuggestion, rhythmItem } from "../restore-ui.js?v=51ede4cbfe";
-import { askHtml, mountAsk } from "../care-ui.js?v=51ede4cbfe";
+import { dayRing, draw, esc, RING_CATS, spark } from "../charts.js?v=0f06915566";
+import { clock, day, dur, measure, num, signed, t, wtype } from "../i18n.js?v=0f06915566";
+import { COLOR, icon, STATE_ICON } from "../icons.js?v=0f06915566";
+import { worseLine } from "./drain.js?v=0f06915566";
+import { helping } from "./effects.js?v=0f06915566";
+import { nowItem, nowLine, quietSuggestion, rhythmItem } from "../restore-ui.js?v=0f06915566";
+import { askHtml, mountAsk } from "../care-ui.js?v=0f06915566";
 
 const shiftDay = (iso, n) => { const d = new Date(`${iso}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const chip = (cls, text, glyph = "") => `<span class="chip ${cls}">${glyph}${esc(text)}</span>`;

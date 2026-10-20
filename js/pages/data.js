@@ -2,9 +2,9 @@
 // travels (four sources, each to the files it lands in and the pages that read them), how much has built up, what
 // stays private and what it costs, and the nine files. The daily check (90 days of arrivals under each device) and
 // the import commands are folded away at the bottom, for the person whose data it is. Rules: modules/data.py.
-import { coverage, draw, esc } from "../charts.js?v=51ede4cbfe";
-import { clock, day, num, t } from "../i18n.js?v=51ede4cbfe";
-import { icon } from "../icons.js?v=51ede4cbfe";
+import { coverage, draw, esc } from "../charts.js?v=0f06915566";
+import { clock, day, num, t } from "../i18n.js?v=0f06915566";
+import { icon } from "../icons.js?v=0f06915566";
 
 // the page each source feeds, by the name its menu entry has
 const PAGE_NAME = { today: "nav.today", recovery: "nav.recovery", sleep: "nav.sleep_tab", drain: "nav.drain", body: "nav.weight_tab",

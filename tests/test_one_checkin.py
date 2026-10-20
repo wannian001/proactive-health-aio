@@ -13,6 +13,7 @@ from pathlib import Path
 from healthaio import config, demo, recovery_log
 from healthaio.context import Context
 from healthaio.modules import today
+from healthaio.schema import SORE_REGIONS
 
 WEB = Path(__file__).resolve().parents[1] / "healthaio" / "web"
 read = lambda name: (WEB / name).read_text(encoding="utf-8")
@@ -115,9 +116,24 @@ class WordsAndFiles(unittest.TestCase):
                      "js/pages/restore.js", "js/pages/recovery.js", "js/pages/today.js"):
             self.assertFalse(re.search(r"[一-鿿]", read(name)), f"{name} has Chinese words outside i18n.js")
 
-    def test_the_unused_3d_model_is_gone(self):
+    def test_the_body_is_one_local_model_file(self):
+        # no 3D library is vendored: the page draws tools/make_body_mesh.py's file with plain WebGL
         self.assertFalse((WEB / "vendor").exists())
-        self.assertEqual(sorted(p.name for p in (WEB / "models" / "recovery").iterdir()), ["ILLUSTRATION.md", "body-illustration.png"])
+        folder = WEB / "models" / "recovery"
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ["MODEL.md", "body.bin"])
+        blob = (folder / "body.bin").read_bytes()
+        self.assertEqual(blob[:4], b"HAB2")
+        length = int.from_bytes(blob[4:8], "little")
+        head = json.loads(blob[8:8 + length])
+        self.assertEqual(tuple(head["regions"]), SORE_REGIONS + ("other",))
+        self.assertEqual(sorted(head["anchors"]), sorted(SORE_REGIONS))
+        n, t = head["vertices"], head["triangles"]
+        self.assertLess(n, 65536)  # the triangles are uint16
+        body = 8 + length + n * 6 + (-(n * 6) % 4) + n * 4 + n * 4 + n * 8 + t * 6
+        # then the muscle lines, each block 4-byte aligned
+        lv, lt = head["lines"]["vertices"], head["lines"]["triangles"]
+        self.assertTrue(0 < lv < 65536 and lt > 0)
+        self.assertEqual(len(blob), body + (-body % 4) + lv * 6 + (-(lv * 6) % 4) + lt * 6)
 
 
 class DemoEnergy(unittest.TestCase):

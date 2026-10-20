@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BINARY = {".png", ".jpg", ".jpeg", ".gif", ".icns", ".ico", ".mp4", ".mov", ".zip", ".pdf", ".woff", ".woff2"}
+BINARY = {".png", ".jpg", ".jpeg", ".gif", ".icns", ".ico", ".mp4", ".mov", ".zip", ".pdf", ".woff", ".woff2", ".bin"}
 PATTERNS = {
     "a home folder": re.compile(r"/(?:Users|home)/(?!you\b|me\b|example\b|USER\b|<)[A-Za-z0-9._-]+/"),
     "an e-mail address": re.compile(r"\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|org|test)\b)"

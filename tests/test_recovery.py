@@ -28,7 +28,7 @@ from datetime import date, datetime, timedelta
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
-from healthaio import capture, checkin, config, demo
+from healthaio import capture, checkin, config, demo, schema
 from healthaio.config import Config
 from healthaio.context import Context
 from healthaio.importers import apple_health
@@ -143,10 +143,10 @@ class Soreness(Folder):
         return [(r["date"].isoformat(), r["region"], r["level"]) for r in Store(self.cfg.data_dir).rows("soreness")]
 
     def test_a_check_in_replaces_that_morning_only(self):
-        checkin.save(self.cfg, date(2026, 10, 11), {"torso": 2})
-        checkin.save(self.cfg, date(2026, 10, 12), {"left_calf": 1, "pelvis": 3})
-        checkin.save(self.cfg, date(2026, 10, 12), {"right_calf": 2})
-        self.assertEqual(self.rows(), [("2026-10-11", "torso", 2), ("2026-10-12", "right_calf", 2)])
+        checkin.save(self.cfg, date(2026, 10, 11), {"chest": 2})
+        checkin.save(self.cfg, date(2026, 10, 12), {"left_calf_back": 1, "left_glute": 3})
+        checkin.save(self.cfg, date(2026, 10, 12), {"right_calf_back": 2})
+        self.assertEqual(self.rows(), [("2026-10-11", "chest", 2), ("2026-10-12", "right_calf_back", 2)])
 
     def test_nothing_tapped_is_a_morning_with_nothing_sore(self):
         checkin.save(self.cfg, date(2026, 10, 12), {})
@@ -156,33 +156,33 @@ class Soreness(Folder):
         self.assertNotIn(date(2026, 10, 11), log)  # not checked: unknown
 
     def test_bad_check_ins_are_refused(self):
-        for levels in ({"thigh": 1}, {"torso": 4}, {"torso": True}, ["torso"]):
+        for levels in ({"thigh": 1}, {"chest": 4}, {"chest": True}, ["chest"]):
             with self.assertRaises(checkin.CheckinError, msg=levels):
                 checkin.check(levels)
         with self.assertRaises(checkin.CheckinError):
             checkin.from_browser(self.cfg, {"date": "2026-10-13", "levels": {}}, NOW)  # tomorrow
-        self.assertEqual(checkin.check({"torso": 0, "head": None, "left_calf": 2}), {"left_calf": 2})
+        self.assertEqual(checkin.check({"chest": 0, "neck_front": None, "left_calf_back": 2}), {"left_calf_back": 2})
 
     def test_a_hand_written_row_that_does_not_parse_survives(self):
-        (self.cfg.data_dir / "soreness.csv").write_text("date,region,level\n2026-10-01,knee,2\n2026-10-12,torso,1\n")
-        checkin.save(self.cfg, date(2026, 10, 12), {"head": 1})
+        (self.cfg.data_dir / "soreness.csv").write_text("date,region,level\n2026-10-01,knee,2\n2026-10-12,chest,1\n")
+        checkin.save(self.cfg, date(2026, 10, 12), {"neck_front": 1})
         text = (self.cfg.data_dir / "soreness.csv").read_text()
         self.assertIn("2026-10-01,knee,2", text)
-        self.assertNotIn("torso", text)
+        self.assertNotIn("chest", text)
 
     def test_spare_the_sore_parts_when_training_is_planned(self):
         self.cfg.training = {"mon": "Gym 50 min"}
-        checkin.save(self.cfg, TODAY, {"left_calf": 2, "torso": 1})
+        checkin.save(self.cfg, TODAY, {"left_calf_back": 2, "chest": 1})
         ctx = self.ctx()
         out = actions.build(ctx, TODAY, today.recovery(ctx, TODAY), {"worse": []})
         item = next(x for x in out["items"] if x["domain"] == "training")
-        self.assertEqual((item["key"], item["params"]["regions"]), ("spare", ["left_calf"]))  # only clearly or very sore
+        self.assertEqual((item["key"], item["params"]["regions"]), ("spare", ["left_calf_back"]))  # only clearly or very sore
         self.assertFalse(followup.check(ctx, item, TODAY, {})["checked"])  # training advice is not checked
 
     def test_no_advice_for_a_session_already_done(self):
         # sore this morning with 50 minutes planned: "spare" until the planned minutes are mostly done
         self.cfg.training = {"mon": "Gym 50 min"}
-        checkin.save(self.cfg, TODAY, {"left_calf": 2})
+        checkin.save(self.cfg, TODAY, {"left_calf_back": 2})
         start = NOW - timedelta(hours=3)
 
         def training(minutes):
@@ -201,12 +201,12 @@ class Soreness(Folder):
 class Feeling(Folder):
     def test_the_feeling_joins_that_mornings_row(self):
         write_table(self.cfg.data_dir, "self_report", [{"date": TODAY, "energy": 3, "note": "long day"}])
-        checkin.save(self.cfg, TODAY, {"torso": 1}, feel=5)
+        checkin.save(self.cfg, TODAY, {"chest": 1}, feel=5)
         checkin.save(self.cfg, TODAY - timedelta(days=1), {}, feel=8)
         rows = {r["date"]: r for r in Store(self.cfg.data_dir).rows("self_report")}
         self.assertEqual((rows[TODAY]["feel"], rows[TODAY]["energy"], rows[TODAY]["note"]), (5, 3, "long day"))
         self.assertEqual(rows[TODAY - timedelta(days=1)]["feel"], 8)
-        checkin.save(self.cfg, TODAY, {"torso": 2})  # no feeling given: the one saved stays
+        checkin.save(self.cfg, TODAY, {"chest": 2})  # no feeling given: the one saved stays
         self.assertEqual(Store(self.cfg.data_dir).by_date("self_report")[TODAY]["feel"], 5)
 
 
@@ -271,12 +271,14 @@ class Trained(Folder):
 
     def test_the_words_of_a_note_choose_regions(self):
         arms = ["left_upper_arm", "right_upper_arm"]
-        self.assertEqual(checkin.regions_in("Bench, rows, curls"), ["torso"] + arms)
-        self.assertEqual(checkin.regions_in("练腿：深蹲、提踵"), ["pelvis", "left_calf", "right_calf"])
-        self.assertEqual(checkin.regions_in("小腿"), ["left_calf", "right_calf"])  # not also 腿, which is hips and calves
-        self.assertEqual(checkin.regions_in("背和三头"), ["torso"] + arms)
-        self.assertEqual(checkin.regions_in("shoulder press, rowing machine"), [])  # no shoulder region; rowing is not row
-        self.assertEqual(checkin.regions_in("bench卧推"), ["torso"])  # English words end at a Chinese character
+        self.assertEqual(checkin.regions_in("Bench, rows, curls"),
+                         ["left_shoulder_front", "right_shoulder_front", "chest", "upper_back"] + arms)
+        self.assertEqual(checkin.regions_in("深蹲、提踵"),
+                         ["left_glute", "right_glute", "left_thigh_front", "right_thigh_front", "left_calf_back", "right_calf_back"])
+        self.assertEqual(checkin.regions_in("小腿"), ["left_calf_back", "right_calf_back"])  # not also 腿, the whole legs
+        self.assertEqual(checkin.regions_in("背和三头"), ["upper_back"] + arms)
+        self.assertEqual(checkin.regions_in("rowing machine"), [])  # rowing is not row
+        self.assertEqual(checkin.regions_in("bench卧推"), ["left_shoulder_front", "right_shoulder_front", "chest"] + arms)
 
     def test_a_hard_workout_is_asked_about_until_something_is_written(self):
         start = NOW - timedelta(hours=3)
@@ -284,8 +286,8 @@ class Trained(Folder):
         self.assertEqual(self.asked_now()["start"], start.strftime("%Y-%m-%dT%H:%M"))
         checkin.save_trained(self.cfg, start, [], "")  # "not this time"
         self.assertIsNone(self.asked_now())
-        checkin.save_trained(self.cfg, start, ["torso"], "bench")  # replaces the row, never adds one
-        self.assertEqual(Store(self.cfg.data_dir).load("workout_notes").rows[0]["regions"], "torso")
+        checkin.save_trained(self.cfg, start, ["chest"], "bench")  # replaces the row, never adds one
+        self.assertEqual(Store(self.cfg.data_dir).load("workout_notes").rows[0]["regions"], "chest")
         self.assertEqual(len(Store(self.cfg.data_dir).rows("workout_notes")), 1)
 
     def test_easy_old_or_unfinished_workouts_are_not_asked_about(self):
@@ -298,21 +300,22 @@ class Trained(Folder):
         write_table(self.cfg.data_dir, "workouts", [self.strength(NOW - timedelta(hours=2), effort=8, kind="running")])
         self.assertIsNotNone(self.asked_now())  # a hard run counts, not only strength
 
-    def test_the_next_mornings_ask_about_what_was_trained(self):
+    def test_what_was_trained_and_how_sore_it_was_said_to_be_the_next_morning(self):
         start = datetime.combine(TODAY - timedelta(days=1), datetime.min.time()).replace(hour=17)
         write_table(self.cfg.data_dir, "workouts", [self.strength(start)])
-        checkin.save_trained(self.cfg, start, ["torso", "left_upper_arm", "right_upper_arm"], "bench, curls")
-        checkin.save(self.cfg, TODAY, {"torso": 2})
+        checkin.save_trained(self.cfg, start, ["chest", "left_upper_arm", "right_upper_arm"], "bench, curls")
+        checkin.report(self.cfg, NOW, {"chest": 2, "left_upper_arm": 0})
         page = recovery.build(self.ctx())
-        self.assertEqual(page["soreness"]["asked"][0]["regions"], ["torso", "left_upper_arm", "right_upper_arm"])
-        torso = next(r for r in page["soreness"]["regions"] if r["key"] == "torso")
-        self.assertEqual([d["trained"] for d in torso["days"][-2:]], [True, False])
+        self.assertNotIn("asked", page["soreness"])  # nobody is asked about every region trained
+        chest = next(r for r in page["soreness"]["regions"] if r["key"] == "chest")
+        self.assertEqual([d["trained"] for d in chest["days"][-2:]], [True, False])
         row = page["after"]["days"][0]
-        self.assertEqual(row["sore_next"], {"torso": 2, "left_upper_arm": 0, "right_upper_arm": 0})
+        # what was not said is unknown, not "not sore"
+        self.assertEqual(row["sore_next"], {"chest": 2, "left_upper_arm": 0, "right_upper_arm": None})
         self.assertEqual(row["sessions"][0]["note"]["note"], "bench, curls")
 
     def test_bad_notes_are_refused(self):
-        for regions, note in ((["knee"], ""), ("torso", ""), ([], "x" * 501), ([], 5)):
+        for regions, note in ((["knee"], ""), ("chest", ""), ([], "x" * 501), ([], 5)):
             with self.assertRaises(checkin.CheckinError):
                 checkin.check_trained(regions, note)
         with self.assertRaises(checkin.CheckinError):
@@ -348,18 +351,18 @@ class Endpoint(unittest.TestCase):
             return error.code, json.loads(error.read() or b"{}")
 
     def test_the_page_saves_and_recovery_shows_it(self):
-        status, out = self.post({"date": TODAY.isoformat(), "levels": {"pelvis": 3}, "feel": 2})
+        status, out = self.post({"date": TODAY.isoformat(), "levels": {"left_glute": 3}, "feel": 2})
         self.assertEqual((status, out["ok"]), (200, True))
         page = payload(self.cfg, "recovery", None, NOW)
-        self.assertEqual((page["soreness"]["today"], page["soreness"]["levels"]), (True, {"pelvis": 3}))
+        self.assertEqual((page["soreness"]["today"], page["soreness"]["levels"]), (True, {"left_glute": 3}))
         self.assertEqual(page["feel_today"], 2)
         self.assertEqual(self.post({"date": TODAY.isoformat(), "levels": {}, "feel": 4})[0], 400)
 
     def test_the_prompt_saves_what_a_workout_trained(self):
         asked = payload(self.cfg, "prompt", None, NOW)["session"]
         self.assertIsNotNone(asked)  # the demo's lunchtime run
-        status, out = self.post({"start": asked["start"], "regions": ["left_calf", "right_calf"], "note": "intervals"}, path="trained")
-        self.assertEqual((status, out["regions"]), (200, ["left_calf", "right_calf"]))
+        status, out = self.post({"start": asked["start"], "regions": ["left_calf_back", "right_calf_back"], "note": "intervals"}, path="trained")
+        self.assertEqual((status, out["regions"]), (200, ["left_calf_back", "right_calf_back"]))
         self.assertIsNone(payload(self.cfg, "prompt", None, NOW)["session"])
         self.assertEqual(self.post({"start": asked["start"], "regions": ["knee"]}, path="trained")[0], 400)
         self.assertEqual(self.post({"start": asked["start"], "regions": []}, origin="http://evil.example", path="trained")[0], 403)
@@ -367,7 +370,7 @@ class Endpoint(unittest.TestCase):
     def test_only_this_apps_own_page_may_write(self):
         before = (self.cfg.data_dir / "soreness.csv").read_text()
         for origin in ("http://evil.example", None):
-            self.assertEqual(self.post({"date": TODAY.isoformat(), "levels": {"head": 1}}, origin=origin)[0], 403)
+            self.assertEqual(self.post({"date": TODAY.isoformat(), "levels": {"neck_front": 1}}, origin=origin)[0], 403)
         self.assertEqual(self.post({"date": TODAY.isoformat(), "levels": {"knee": 1}})[0], 400)
         self.assertEqual((self.cfg.data_dir / "soreness.csv").read_text(), before)
 
@@ -395,13 +398,19 @@ class Demo(unittest.TestCase):
             if row["status"] == "ok":
                 self.assertEqual(row["detected"], row["p_adjusted"] < 0.05)
 
-    def test_the_demo_rates_most_workouts_and_checks_in(self):
+    def test_the_demo_rates_most_workouts_and_says_where_it_is_sore(self):
         rows = Store(self.cfg.data_dir).rows("workouts")
         rated = [r for r in rows if r["effort"] is not None]
         self.assertGreater(len(rated) / len(rows), 0.8)
         self.assertGreater(self.page["load"]["rated_share"], 0.8)
-        self.assertGreater(self.page["soreness"]["checked"], 5)
-        self.assertEqual({r["key"] for r in self.page["soreness"]["regions"]}, set(recovery.SORE_REGIONS))
+        S = self.page["soreness"]
+        self.assertGreater(S["said_days"], 3)
+        self.assertTrue(S["today"])  # Sam says his neck is stiff this morning
+        self.assertTrue(S["follow_up"])  # and yesterday's places are asked about
+        self.assertLessEqual({r["key"] for r in S["regions"]}, set(recovery.SORE_REGIONS))
+        sore = Store(self.cfg.data_dir).load("soreness")
+        self.assertEqual(sore.problems, [])
+        self.assertTrue(all(r.get("at") for r in sore.rows))
 
     def test_the_demo_asks_about_todays_run_and_noted_most_sessions(self):
         prompt = payload(self.cfg, "prompt", None, NOW)
@@ -413,40 +422,36 @@ class Demo(unittest.TestCase):
         for row in notes.rows:  # the demo's notes say what its regions are
             self.assertEqual(checkin.regions_in(row["note"]), row["regions"].split(), row["note"])
 
-    def test_words_and_figure_files_exist(self):
+    def test_words_exist_in_both_languages(self):
         i18n = (WEB / "js" / "i18n.js").read_text(encoding="utf-8")
         page = (WEB / "js" / "pages" / "recovery.js").read_text(encoding="utf-8")
         used = set(re.findall(r't\("((?:rec|sore)\.[\w.]+)"', page))
-        used |= {f"sore.region.{r}" for r in recovery.SORE_REGIONS} | {f"sore.level.{k}" for k in range(4)}
+        used |= {f"sore.region.{r}" for r in schema.ALL_SORE_REGIONS} | {f"sore.level.{k}" for k in range(4)}
+        used |= {f"sore.area.{a}" for a, _, _ in schema.SORE_AREAS} | {"sore.area.leg"}
+        used |= {f"sore.face.{f}" for f in ("front", "back", "outer", "inner", "all")} | {f"sore.side.{x}" for x in ("left", "right", "both")}
+        used |= {f"sore.q.{q}" for q in ("leg", "side", "face", "level")}
+        used |= {f"sore.one.{a}" for a, sides, _ in schema.SORE_AREAS if sides} | {f"sore.side_btn.{x}" for x in ("left", "right", "both")}
         used |= {f"rec.out.{o}" for o in recovery.OUTCOMES} | {f"rec.out.{o}.{d}" for o in recovery.OUTCOMES for d in ("up", "down")}
         used |= {f"rec.load.{s}" for s in ("high", "low", "steady", "none", "unknown", "few_ratings")}
         used |= {"nav.recovery", "todo.spare", "todo.short.spare", "fu.name.spare", "feel.2", "feel.5", "feel.8", "feel.question"}
         used |= {f"after.band.{b}" for b in ("good", "ok", "low")} | {f"after.part.{k}" for k in recovery.PARTS}
         for key in used:
             self.assertEqual(i18n.count(f'"{key}"'), 2, key)
-        figure = (WEB / "js" / "figure.js").read_text(encoding="utf-8") + (WEB / "js" / "trained.js").read_text(encoding="utf-8")
-        for key in set(re.findall(r't\("((?:trained|sore|asked|after)\.[\w.]+)"', page + figure)):
+        more = "".join((WEB / "js" / name).read_text(encoding="utf-8") for name in ("trained.js", "sore-say.js"))
+        for key in set(re.findall(r't\("((?:trained|sore|say|fu|after)\.[\w.]+)"', page + more)):
             self.assertEqual(i18n.count(f'"{key}"'), 2, key)
         from healthaio.schema import TABLES
         for name in TABLES:  # the Data page says what each file holds in both languages, not the schema's English
             self.assertEqual(i18n.count(f'"data.table.{name}"'), 2, name)
-        for sex in ("male", "female"):
-            self.assertTrue((WEB / "img" / f"body-{sex}-art.png").is_file())
-            for region in recovery.SORE_REGIONS:
-                self.assertTrue((WEB / "img" / f"body-mask-{sex}-{region}.png").is_file())
-            for region in recovery.SORE_REGIONS:
-                self.assertTrue((WEB / "img" / f"body-mask-{sex}-{region}.png").is_file(), (sex, region))
+        self.assertFalse((WEB / "js" / "figure.js").exists())  # the first 2D figure is gone; the 3D body is the only one
+        self.assertFalse((WEB / "img").exists())
 
-    def test_the_figure_follows_the_setting(self):
-        self.assertEqual(self.page["figure"], "male")
+    def test_an_older_figure_setting_is_still_read(self):
         path = self.tmp / "healthaio.toml"
         text = path.read_text()
         path.write_text(text.replace("[healthaio]\n", '[healthaio]\nfigure = "female"\n', 1))
         try:
-            self.assertEqual(config.load(path).figure, "female")
-            path.write_text(text.replace("[healthaio]\n", '[healthaio]\nfigure = "robot"\n', 1))
-            with self.assertRaises(config.ConfigError):
-                config.load(path)
+            config.load(path)  # the key is ignored, not an error
         finally:
             path.write_text(text)
 

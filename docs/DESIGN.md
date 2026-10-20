@@ -101,33 +101,45 @@ two are easy to confuse.
 The first page under Body signals, because recovery is the body signal the day's decisions hang on.
 
 - **How recovered** is the Today page's verdict, the same numbers, so the two pages never disagree. Under it, this
-  week's training load (a link to Body & mind load) and this morning's soreness, one line each.
-- **The morning check-in** is two things in one save. How you feel is one tap of three: not recovered (2), so-so (5),
-  recovered (8); three steps are as many as a sleepy person tells apart, and the numbers put them on the same 0–10
-  scale as the score below. Where you are sore is the body figure from the author's GEOM90007 project Ready to Train
-  (seven regions, a male and a female figure, `[healthaio] figure`): tapping a region cycles a little → clearly →
-  very → not sore. Save sends `POST /api/checkin`, which sets that morning's `feel` in `self_report.csv` and replaces
-  its rows in `soreness.csv` (same rule as goals: only this app's own page). An SVG mask does not change what a
-  click hits, so the region under the pointer is read from the masks' own pixels. The figure is line art with a
-  see-through background, made from Ready to Train's reference images and painted in `--plate-ink` on `--plate`, so
-  it sits on a light plate in light mode and a dark one in dark mode; the soreness colours (`--c-sore-1..3`) are one
-  yellow getting stronger, the same in both modes and on every body figure. A morning without a check-in is unknown.
+  week's training load (a link to Body & mind load) and today's soreness, one line each.
+- **How you feel this morning** is one tap of three: not recovered (2), so-so (5), recovered (8); three steps are as
+  many as a sleepy person tells apart, and the numbers put them on the same 0–10 scale as the score below. Save sends
+  `POST /api/checkin` with `levels: null`, which sets that morning's `feel` in `self_report.csv` and leaves soreness
+  alone (same rule as goals: only this app's own page).
+- **Where it hurts is said when it is felt.** Most days nothing hurts and nobody notices their body, so a list of
+  places to tick every morning asks the wrong question; soreness is reported the moment it is felt, the way food is
+  taken out in Eat It. One sentence, typed or spoken, goes to `POST /api/sore-parse`, which reads it into places and
+  writes nothing (`sore_say.py`: fixed Chinese and English word lists for the place, the side, the face and how much,
+  with time words such as 前天 or 左右 "about" kept from passing for a place or a side; or, when it is on, the
+  assistant, which may only answer with the same ids and falls back to the lists). The microphone is the browser's
+  own speech recogniser where there is one (Chrome sends the audio to Google, and the page says so while it
+  listens); the phone keyboard's microphone works everywhere. Each place the sentence names becomes a row with a
+  button for whatever it left open, in order: thigh or calf, which side, which face, how much. There are 31 places
+  (`schema.SORE_REGIONS`): the front of the neck and the two halves of its back, the front and back of each
+  shoulder, the chest, upper back, abs and lower back, each glute, each upper arm, and the front, back, outer and
+  inner face of each thigh and each calf; the back of the neck with no side is both halves. Fine enough to say where,
+  coarse enough to say without anatomy. The 3D body above takes a place too: a click picks the region under the
+  pointer and a level. Save sends `POST /api/sore`, which writes today's rows for the places said, and only those,
+  in `soreness.csv`, with the time and the sentence; level 0 means fine again. A place not said is unknown, not fine.
+  Older rows with the earlier regions (head, torso, pelvis, a whole calf) are kept as they are and shown as
+  "(earlier)"; a day whose rows carry no time was a whole morning check-in, so its places not named were fine.
 - **What a workout trained.** Soreness the next morning means little without knowing what was trained, and the
   watch does not know (a strength session is just "strength training"). So after a strength session or a hard one
   (effort 7 or more on Apple's scale, where 7–8 is "hard"), every page shows a note in the corner for 36 hours after
-  it ended: tap the parts it trained on the figure, or say it in a sentence. A sentence is quicker than taps right
+  it ended: tap the parts it trained (a button each, grouped by area), or say it in a sentence. A sentence is quicker than taps right
   after training, and on a phone the keyboard's microphone takes dictation, so the page needs no speech service of
   its own (nothing leaves the computer). Words in the sentence light up the parts they name (Chinese and English,
-  `checkin.REGION_WORDS`: 卧推 or bench → torso, 二头 or curls → both upper arms; longer words first, so 小腿 is not
+  `checkin.REGION_WORDS`: 卧推 or bench → the chest, the fronts of both shoulders and both upper arms, 深蹲 or
+  squat → the fronts of the thighs and the glutes; longer words first, so 小腿 is not
   also 腿), always shown and always untickable, never a hidden guess. "Not this time" writes an empty row, so the
   note does not come back on the phone after it was dismissed on the computer. Saved into `workout_notes.csv`
   through `POST /api/trained`. The note appears only when a page is open: the iPhone app sends Health data while it
   is open, so "right after the workout" means the next time you look.
-- **The next two mornings ask about those parts first**, a row per part with a button per level (not sore, a
-  little, clearly, very), above the figure, which still takes the rest; buttons and figure are the same check-in.
-  Delayed muscle soreness peaks a day or two after training, hence two mornings. The 14-day strips mark the days
-  each part was trained, and each training day under the morning-after score says what it trained and how sore
-  those parts were the next morning.
+- **The following days ask about each sore place** (`recovery.follow_up`), at the top of the card: a row per place
+  with a button per level and "fine now", until its latest answer is fine, for at most 14 days after it was last
+  said. Nobody ticks through places that do not hurt. The 14-day strips mark the days each part was trained, and
+  each training day under the morning-after score says what it trained and how sore those parts were said to be the
+  next morning.
 - **The morning after training** answers "did I come back from that session?" for the last training day, on day 2:
   four parts, each set against your own normal and put on 0–10 with 5 for a usual morning (2.5 points per spread
   of your normal, better direction up): how you said you felt; HRV the morning after against the morning before

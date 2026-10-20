@@ -3,23 +3,25 @@
 The Recovery route (`#recovery`) opens with a 3D regional body you can turn all the way round,
 two stacked horizontal cards (soreness and energy), cardio fitness and related
 sleep, HRV, resting-heart-rate and training-load records. Below it, one card, "How you are right now",
-takes everything you say (energy 0–10, this morning's feeling, soreness chosen on the body, mind and task);
+takes everything you say (where it hurts, said in a sentence or chosen on the body; energy 0–10, this morning's
+feeling, mind and task);
 then the after-training analyses, and the personal HRV model at the bottom. The overview itself writes
 nothing: choosing a region and a level fills in that card, which saves.
 
 恢复页顶部为部位地图、上下排列的酸痛与精力横卡、心肺趋势和相关记录。下面是「此刻怎么样」一张卡，
-要说的都在这里（精力 0–10、早上的恢复感受、在人体图上选的酸痛、精神状态和任务），再往下是练后分析，
+要说的都在这里（哪里不舒服，一句话说出来或在人体上点；精力 0–10、早上的恢复感受、精神状态和任务），再往下是练后分析，
 个人 HRV 模型在最下面。3D 人体可拖动 360° 旋转（按钮和左右方向键一次转 90°），大小固定；点击只选择部位，
 选了程度之后在「此刻怎么样」里保存。
 
 ## Meaning and missing data
 
 - Energy is rated **0–10** with a timezone-aware server timestamp. Soreness keeps its three levels
-  (**0–3**, a little / clearly / very) on the morning check-in. Older 0–10 soreness ratings and 0–5
+  (**0–3**, a little / clearly / very), said for a place when it is felt; 0 is fine again. Older 0–10 soreness ratings and 0–5
   energy entered by hand are still read and labeled with their own scale; the page no longer asks for them.
   A reported range remains a range; its drawing midpoint is not a training label.
 - The main soreness reading is the maximum of explicitly recorded regions. With timestamped input,
-  untouched regions stay unknown. Selecting a region never changes whole-person energy.
+  untouched regions stay unknown. A place said to be sore on an earlier day is asked about at the top of the card
+  on the following days until it is fine (at most 14 days). Selecting a region never changes whole-person energy.
 - Both cards show a time window and target when personal history supports one. Daily observations
   produce day windows; dense timestamped observations can produce hour windows. Missing, old,
   incomplete or insufficient history explains why no time is shown.
@@ -33,7 +35,7 @@ nothing: choosing a region and a level fills in that card, which saves.
   annotations; an unannotated workout does not imply untrained muscles.
 - Historical Recovery dates apply to both self-report and cardio data.
 
-精力用 0–10 分并记录时间；酸痛在早上打卡里保留三档。以前记的 0–10 酸痛和手填的 0–5 精力照样读、标明各自的量表，页面不再问。时间和目标突出显示，
+精力用 0–10 分并记录时间；酸痛保留三档，感觉到时按部位说，0 表示好了；之前说过的部位，之后几天在卡片顶上追问到好了为止。以前记的 0–10 酸痛和手填的 0–5 精力照样读、标明各自的量表，页面不再问。时间和目标突出显示，
 有足够历史才出范围。区间自评保持原区间；设备值不代替主观标签。心肺读取已有长期趋势，
 人体只呈现现有区域，不能推断单块肌肉的状态。
 
@@ -50,8 +52,9 @@ not a personal scan or an anatomical model.
 It turns all the way round: dragging sideways turns it (with a little run-on after a flick, none with reduced
 motion), the two buttons and the left/right arrow keys turn it a quarter, Front turns it back. Vertical swipes
 still scroll the page. The corner names the side turned towards you. Size is fixed; no zoom is offered, and the
-whole body fits at every angle. The seven regional hit areas match the existing check-in schema; a click picks the
-nearest triangle along the ray and its strongest region. Untracked thighs/forearms/hands/feet stay unclassified,
+whole body fits at every angle. The 31 hit areas are the places soreness is said for (`schema.SORE_REGIONS`); a click picks
+the nearest triangle along the ray and its strongest region. The head, forearms, hands and feet are not places and
+stay unclassified,
 and a click that misses the body selects nothing. The marker sits where you clicked while that point shows, else on
 the side of the region facing you; when the whole region is out of sight it is hidden, and the region stays in the
 accessible selector.

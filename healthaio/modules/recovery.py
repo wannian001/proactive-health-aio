@@ -29,14 +29,14 @@ your body has answered training.
   and 7.5 is one band width better. For HRV the normal is that of its morning-to-morning changes, since HRV moves a
   lot from one morning to the next and a change is what the part measures. A morning needs at least two parts, one of them from the body, for a score.
   6.5 and above reads as recovered well, under 3.5 as not recovered.
-- Soreness: the morning check-ins in soreness.csv (1 a little, 2 clearly sore, 3 very sore, per region of the body
-  figure). The figure shows the latest check-in; the last SORE_DAYS days show each region's levels, with the days
-  each region was trained marked. A day without a check-in is unknown, never "not sore".
+- Soreness (soreness.csv: 1 a little, 2 clearly sore, 3 very sore, 0 fine again, per region): said when it is felt,
+  in a sentence (sore_say.py), and asked about again on the following days (follow_up(): every region whose latest
+  answer in the last FOLLOW_DAYS days was sore, until you say it is fine), so nobody ticks through every region each
+  morning. The figure shows today's; the last SORE_DAYS days show the levels of every region said in them, with the
+  days each was trained marked. A region not said on a day is unknown, never "not sore".
 - What a workout trained (workout_notes.csv): after a strength session or a hard one (effort HARD_EFFORT or more),
-  every page asks once, for PROMPT_HOURS hours after it ended (prompt()), which regions it trained, by taps on the
-  figure or a note. The check-ins of the ASK_MORNINGS mornings after a noted workout ask about its regions first,
-  with a button per level, and each training day shows what it trained and how sore those regions were the next
-  morning.
+  every page asks once, for PROMPT_HOURS hours after it ended (prompt()), which regions it trained, by taps or a note.
+  Each training day shows what it trained and how sore those regions were said to be the next morning.
 """
 import statistics
 from datetime import date, datetime, timedelta
@@ -45,7 +45,7 @@ from typing import Any, Dict, List, Optional
 from .. import stats
 from ..checkin import REGION_WORDS
 from ..context import Context, iso
-from ..schema import SORE_REGIONS
+from ..schema import ALL_SORE_REGIONS, LEGACY_REGIONS, SORE_AREAS, SORE_REGIONS
 from . import today as today_page
 
 ACUTE = 7
@@ -64,7 +64,7 @@ OUTCOME_BETTER = {"hrv": "higher", "resting_hr": "lower", "sore_max": "lower"}
 OUTCOME_UNITS = {"hrv": "%", "resting_hr": "bpm", "sore_max": "level"}
 HARD_EFFORT = 7    # Apple's scale: 7-8 hard, 9-10 all out
 PROMPT_HOURS = 36  # how long after a workout the pages ask what it trained
-ASK_MORNINGS = 2   # the mornings after a noted workout whose check-in asks about its regions first
+FOLLOW_DAYS = 14   # a region said to be sore is asked about on the following days, for at most this long
 
 
 def daily_load(ctx: Context, until: date) -> Dict[date, Dict[str, Any]]:
@@ -121,12 +121,13 @@ def load_summary(days: Dict[date, Dict[str, Any]], end: date) -> Dict[str, Any]:
 
 
 def soreness_log(ctx: Context) -> Dict[date, Dict[str, int]]:
-    """Each checked-in morning as {region: level}; an empty dict is a check-in with nothing sore."""
+    """Each day something was said as {region: level}, 0 for a region said to be fine again; an empty dict is an older
+    morning check-in with nothing sore."""
     out: Dict[date, Dict[str, int]] = {}
     for row in ctx.store.rows("soreness"):
         day = out.setdefault(row["date"], {})
-        if row["region"] != "none" and row["level"]:
-            day[row["region"]] = int(row["level"])
+        if row["region"] != "none":
+            day[row["region"]] = int(row["level"] or 0)
     return out
 
 
@@ -144,7 +145,7 @@ def workout_notes(ctx: Context) -> Dict[datetime, Dict[str, Any]]:
     out: Dict[datetime, Dict[str, Any]] = {}
     for row in ctx.store.rows("workout_notes"):
         words = (row.get("regions") or "").split()
-        out[_minute(row["start"])] = {"regions": [r for r in SORE_REGIONS if r in words], "note": row.get("note") or ""}
+        out[_minute(row["start"])] = {"regions": [r for r in ALL_SORE_REGIONS if r in words], "note": row.get("note") or ""}
     return out
 
 
@@ -161,19 +162,22 @@ def trained_on(days: Dict[date, Dict[str, Any]]) -> Dict[date, List[str]]:
     for d, v in days.items():
         regions = {r for s in v["sessions"] if s.get("note") for r in s["note"]["regions"]}
         if regions:
-            out[d] = [r for r in SORE_REGIONS if r in regions]
+            out[d] = [r for r in ALL_SORE_REGIONS if r in regions]
     return out
 
 
-def asked(days: Dict[date, Dict[str, Any]], end: date) -> List[Dict[str, Any]]:
-    """The noted workouts of the ASK_MORNINGS days before `end`, newest first: the check-in asks about their regions."""
+def follow_up(ctx: Context, end: date) -> List[Dict[str, Any]]:
+    """The regions to ask about on `end`: each whose latest answer before that day, in the last FOLLOW_DAYS days, was
+    sore (said that day, how much, and in what words), and not answered yet on `end`."""
+    latest: Dict[str, Dict[str, Any]] = {}
+    for row in sorted(ctx.store.rows("soreness"), key=lambda r: (r["date"], r.get("at") or datetime.min)):
+        if row["region"] in SORE_REGIONS and end - timedelta(days=FOLLOW_DAYS) <= row["date"] <= end:
+            latest[row["region"]] = row
     out = []
-    for k in range(1, ASK_MORNINGS + 1):
-        d = end - timedelta(days=k)
-        for s in reversed((days.get(d) or {}).get("sessions", [])):
-            if s.get("note") and s["note"]["regions"]:
-                out.append({"date": iso(d), "start": s["start"], "type": s["type"], "minutes": s["minutes"],
-                            "regions": s["note"]["regions"], "note": s["note"]["note"]})
+    for region in SORE_REGIONS:
+        row = latest.get(region)
+        if row and row["date"] < end and (row["level"] or 0) > 0:
+            out.append({"region": region, "date": iso(row["date"]), "level": int(row["level"]), "said": row.get("said") or ""})
     return out
 
 
@@ -200,25 +204,33 @@ def prompt(ctx: Context) -> Dict[str, Any]:
     days = daily_load(ctx, ctx.today)
     annotate(days, workout_notes(ctx))
     return {"page": "prompt", "today": iso(ctx.today), "now": iso(ctx.now), "session": pending(days, ctx.now),
-            "figure": ctx.cfg.figure, "regions": list(SORE_REGIONS), "words": words(),
+            "regions": list(SORE_REGIONS), "areas": areas(), "words": words(),
             "rule": {"hard_effort": HARD_EFFORT, "hours": PROMPT_HOURS}}
+
+
+def areas() -> List[Dict[str, Any]]:
+    """The places as the page asks about them: each area with its sides and faces (schema.SORE_AREAS)."""
+    return [{"area": a, "sides": list(sides), "faces": list(faces)} for a, sides, faces in SORE_AREAS]
 
 
 def soreness(ctx: Context, end: date, log: Dict[date, Dict[str, int]],
              trained: Optional[Dict[date, List[str]]] = None) -> Dict[str, Any]:
+    """Today's soreness (what was said today), and the last SORE_DAYS days of every region said in them."""
     trained = trained or {}
-    latest = max((d for d in log if d <= end), default=None)
     days = [end - timedelta(days=k) for k in range(SORE_DAYS - 1, -1, -1)]
-    checked = [d for d in days if d in log]
+    said = {r for d in days for r in log.get(d, {})}
     regions = []
-    for region in SORE_REGIONS:
-        levels = [log[d].get(region, 0) for d in checked]
-        regions.append({"key": region, "days": [{"date": iso(d), "level": log[d].get(region, 0) if d in log else None,
-                                                 "trained": region in trained.get(d, ())} for d in days],
-                        "sore_days": sum(1 for v in levels if v), "max": max(levels, default=0),
+    for region in [r for r in ALL_SORE_REGIONS if r in said]:
+        levels = [log[d][region] for d in days if region in log.get(d, {})]
+        regions.append({"key": region, "legacy": region in LEGACY_REGIONS,
+                        "days": [{"date": iso(d), "level": log.get(d, {}).get(region),
+                                  "trained": region in trained.get(d, ())} for d in days],
+                        "sore_days": sum(1 for v in levels if v), "said_days": len(levels), "max": max(levels, default=0),
                         "trained_days": sum(1 for d in days if region in trained.get(d, ()))})
-    return {"latest": iso(latest), "today": latest == end, "levels": log.get(latest, {}) if latest else {},
-            "checked": len(checked), "days": SORE_DAYS, "regions": regions}
+    today = log.get(end, {})
+    return {"today": bool(today), "levels": {r: lv for r, lv in today.items() if lv > 0},
+            "fine_today": [r for r, lv in today.items() if lv == 0], "said_days": sum(1 for d in days if log.get(d)),
+            "days": SORE_DAYS, "regions": regions, "follow_up": follow_up(ctx, end)}
 
 
 def response(ctx: Context, end: date, days: Dict[date, Dict[str, Any]], log: Dict[date, Dict[str, int]]) -> Dict[str, Any]:
@@ -310,7 +322,7 @@ def after_training(ctx: Context, end: date, days: Dict[date, Dict[str, Any]],
         out.append({"date": iso(d), "morning": iso(m), "load": days[d]["load"], "minutes": days[d]["minutes"],
                     "sessions": days[d]["sessions"], "parts": parts, "missing": [k for k in PARTS if k not in parts],
                     "trained": (trained or {}).get(d, []),
-                    "sore_next": None if log is None or m not in log else {r: log[m].get(r, 0) for r in (trained or {}).get(d, [])},
+                    "sore_next": None if log is None or m not in log else {r: log[m].get(r) for r in (trained or {}).get(d, [])},
                     "score": score, "band": None if score is None else "good" if score >= GOOD else "low" if score < LOW else "ok"})
     return {"days": out, "latest": next((x for x in out if x["score"] is not None), None),
             "rule": {"good": GOOD, "low": LOW, "floor": SPREAD_FLOOR, "after_days": AFTER_DAYS}}
@@ -330,7 +342,7 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
     shown = (care_payload["moves"] or {}).get("routines", [])
     care_payload["info"], care_payload["stop"] = routines.info(shown), routines.STOP
     ratings = timed_recovery.build(ctx, end, forecast)
-    return {"page": "recovery", "day": iso(end), "today": iso(ctx.today), "now": iso(ctx.now), "figure": ctx.cfg.figure,
+    return {"page": "recovery", "day": iso(end), "today": iso(ctx.today), "now": iso(ctx.now),
             "restore": restore.build(ctx) if end == ctx.today else None,
             "recovery": today_page.recovery(ctx, end),
             "self": today_page.self_report(ctx, end),
@@ -343,11 +355,11 @@ def build(ctx: Context, day: Optional[str] = None) -> Dict[str, Any]:
                              "assistant": dict(zip(("on", "why"), assistant.available(ctx.cfg)))},
             "forecast": forecast, "current_ratings": ratings,
             "load": load_summary(days, end),
-            "soreness": {**soreness(ctx, end, log, trained), "asked": asked(days, end)},
+            "soreness": soreness(ctx, end, log, trained),
             "after": after_training(ctx, end, days, trained, log),
             "words": words(),
             "feel_today": next((r["feel"] for r in ctx.store.rows("self_report") if r["date"] == end and r.get("feel") is not None), None),
             "response": response(ctx, end, days, log),
-            "regions": list(SORE_REGIONS),
-            "rule": {"acute": ACUTE, "chronic": CHRONIC, "min_rated": MIN_RATED_SHARE, "sore_days": SORE_DAYS,
+            "regions": list(SORE_REGIONS), "areas": areas(), "sore_assistant": dict(zip(("on", "why"), assistant.available(ctx.cfg))),
+            "rule": {"follow_days": FOLLOW_DAYS, "acute": ACUTE, "chronic": CHRONIC, "min_rated": MIN_RATED_SHARE, "sore_days": SORE_DAYS,
                      "response_days": RESPONSE_DAYS}}

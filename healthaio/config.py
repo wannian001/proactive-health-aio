@@ -125,7 +125,6 @@ class Config:
     locale: str = "en"
     title: str = "Health AIO"
     demo: bool = False
-    figure: str = "male"  # [healthaio] figure: which body figure the Recovery page draws (male or female)
     devices: List[str] = field(default_factory=lambda: list(DEFAULT_DEVICES))
     computers: List[str] = field(default_factory=lambda: list(DEFAULT_COMPUTERS))
     agent_apps: List[str] = field(default_factory=lambda: list(DEFAULT_AGENT_APPS))
@@ -244,9 +243,8 @@ def load(path: Optional[Path] = None, data_dir: Optional[Path] = None) -> Config
                  demo=bool(main.get("demo", False)))
     if cfg.locale not in ("en", "zh"):
         raise ConfigError("healthaio.locale must be en or zh")
-    cfg.figure = str(main.get("figure", "male"))
-    if cfg.figure not in ("male", "female"):
-        raise ConfigError("healthaio.figure must be male or female")
+    # [healthaio] figure (male or female) chose the first 2D body figure; an older file may still have it, and it is
+    # ignored: the Recovery page's body is the 3D one now
     devices = raw.get("devices", {})
     if devices.get("priority"):
         cfg.devices = [str(d) for d in devices["priority"]]

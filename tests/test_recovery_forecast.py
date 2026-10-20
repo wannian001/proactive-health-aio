@@ -43,7 +43,7 @@ class PersonalForecast(unittest.TestCase):
 
     def write(self, energy, sore, body=None):
         write_table(self.cfg.data_dir, "self_report", [{"date": d, "energy": v} for d, v in energy.items()])
-        write_table(self.cfg.data_dir, "soreness", [{"date": d, "region": "torso" if v else "none", "level": v} for d, v in sore.items()])
+        write_table(self.cfg.data_dir, "soreness", [{"date": d, "region": "chest" if v else "none", "level": v} for d, v in sore.items()])
         if body is not None:
             write_table(self.cfg.data_dir, "body_daily", body)
 
@@ -60,7 +60,7 @@ class PersonalForecast(unittest.TestCase):
     def test_known_trajectories_yield_personal_windows_and_traceable_backtests(self):
         self.write(*self.series())
         result = self.result()
-        for f in (result["energy"], result["soreness"]["torso"]):
+        for f in (result["energy"], result["soreness"]["chest"]):
             self.assertEqual(f["status"], "estimated")
             self.assertEqual(f["range_days"], [1, 3])
             self.assertEqual(f["median_days"], 2)
@@ -69,12 +69,12 @@ class PersonalForecast(unittest.TestCase):
             self.assertTrue(all(e["through"] <= DAY.isoformat() for e in f["evidence"]))
         self.assertEqual(result["energy"]["value"], 0)
         self.assertEqual(result["energy"]["target"], 4)
-        self.assertEqual(result["soreness"]["torso"]["target"], 1)
-        self.assertEqual(result["soreness"]["left_calf"]["status"], "at_target")
+        self.assertEqual(result["soreness"]["chest"]["target"], 1)
+        self.assertEqual(result["soreness"]["left_calf_back"]["status"], "at_target")
 
     def test_same_episode_stage_is_matched_without_duplicate_training_examples(self):
         self.write(*self.series(lengths=(3,) * 9, phase=2))
-        f = self.result()["soreness"]["torso"]
+        f = self.result()["soreness"]["chest"]
         self.assertEqual(f["status"], "estimated")
         self.assertEqual(f["range_days"], [2, 2])
         # Nine past episodes plus one current censored episode, never daily repeated examples.
@@ -87,7 +87,7 @@ class PersonalForecast(unittest.TestCase):
             if v == 2 and sore.get(d - timedelta(days=1)) == 2 and sore.get(d - timedelta(days=2)) == 0:
                 sore[d] = 3
         self.write(energy, sore)
-        self.assertEqual(self.result()["soreness"]["torso"]["range_days"], [3, 3])
+        self.assertEqual(self.result()["soreness"]["chest"]["range_days"], [3, 3])
 
     def test_missing_followup_is_censored_not_interpolated_or_recovered(self):
         energy, sore = self.series(lengths=(3,) * 9)
@@ -95,7 +95,7 @@ class PersonalForecast(unittest.TestCase):
         for d in starts[:6]:
             del sore[d + timedelta(days=2)]
         self.write(energy, sore)
-        f = self.result()["soreness"]["torso"]
+        f = self.result()["soreness"]["chest"]
         self.assertEqual(f["status"], "incomplete")
         self.assertEqual(f["censored"], 6)
         self.assertIsNone(f["range_days"])
@@ -106,7 +106,7 @@ class PersonalForecast(unittest.TestCase):
         for d in starts[:5]:
             del sore[d + timedelta(days=1)]
         self.write(energy, sore)
-        f = self.result()["soreness"]["torso"]
+        f = self.result()["soreness"]["chest"]
         self.assertNotEqual(f["status"], "estimated")
         self.assertGreater(f["no_followup"], 0)
 
@@ -114,13 +114,13 @@ class PersonalForecast(unittest.TestCase):
         energy, sore = self.series()
         self.write(energy, sore)
         rows = Store(self.cfg.data_dir).rows("soreness")
-        rows.append({"date": DAY, "region": "left_calf", "level": 2})
+        rows.append({"date": DAY, "region": "left_calf_back", "level": 2})
         write_table(self.cfg.data_dir, "soreness", rows)
-        self.assertEqual(self.result()["soreness"]["left_calf"]["n"], 0)
+        self.assertEqual(self.result()["soreness"]["left_calf_back"]["n"], 0)
 
     def test_unfinished_long_episodes_prevent_a_false_short_upper_bound(self):
         self.write(*self.series(lengths=(2, 3, 4, 9, 9)))
-        f = self.result()["soreness"]["torso"]
+        f = self.result()["soreness"]["chest"]
         self.assertEqual(f["status"], "beyond_horizon")
         self.assertIsNone(f["range_days"])
 
@@ -130,7 +130,7 @@ class PersonalForecast(unittest.TestCase):
         old[DAY - timedelta(days=1)] = 0
         old[DAY] = 2
         self.write(energy, old)
-        self.assertEqual(self.result()["soreness"]["torso"]["status"], "old_history")
+        self.assertEqual(self.result()["soreness"]["chest"]["status"], "old_history")
 
     def test_history_cutoff_is_unchanged_by_later_ratings_and_context(self):
         energy, sore = self.series()
@@ -173,7 +173,7 @@ class PersonalForecast(unittest.TestCase):
         self.assertFalse((self.cfg.data_dir / "soreness.csv").exists())
         row = Store(self.cfg.data_dir).rows("self_report")[0]
         self.assertEqual((row["energy"], row["focus"], row["feel"], row["note"]), (0, 3, 8, "test only"))
-        checkin.from_browser(self.cfg, {"date": DAY.isoformat(), "levels": {"torso": 2}, "feel": 5}, NOW)
+        checkin.from_browser(self.cfg, {"date": DAY.isoformat(), "levels": {"chest": 2}, "feel": 5}, NOW)
         self.assertEqual(Store(self.cfg.data_dir).rows("self_report")[0]["energy"], 0)
 
     def test_invalid_energy_is_rejected_before_any_write(self):

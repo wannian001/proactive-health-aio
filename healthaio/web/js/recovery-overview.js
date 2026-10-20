@@ -1,6 +1,7 @@
 import { esc } from "./charts.js";
 import { clock, day, dur, num, rv, t, toDate, wtype } from "./i18n.js";
 import { mountBody } from "./recovery-model.js";
+import { areaOf } from "./sore-say.js";
 import { forecastHtml, forecastText, forecastTarget } from "./recovery-forecast.js";
 
 // All figures below come from existing records. No rescaling and no synthetic ETA. Nothing is written from here:
@@ -45,7 +46,7 @@ function soreCard(p, levels = p.soreness.levels, draft = false) {
   return `${ring(S.value, timed ? 10 : 3, rv("worst"), timed ? rv("soreness") : S.value == null ? rv("unknown") : t(`sore.level.${S.value}`), "ov-sore", draft ? null : f)}
     <div class="ov-card-copy"><div class="ov-card-title"><h2>${t("sore.title")}</h2><span class="ov-tag">${rv("current")}</span></div>
       <p class="ov-description">${S.value == null ? rv("noToday") : S.value === 0 ? rv("noSoreness") : esc(rv("most", { regions: names }))}</p>
-      <p class="ov-secondary">${draft ? rv("draft") : S.value == null ? (p.soreness.latest ? esc(rv("latestSore", { date: day(p.soreness.latest) })) : rv("selectPrompt")) : `${rv("count", { n: S.count })} · ${esc(day(p.day))}${timed ? ` · ${rv("newScale")}` : ` · ${t("now.sore_scale")}`}`}</p>
+      <p class="ov-secondary">${draft ? rv("draft") : S.value == null ? rv("selectPrompt") : `${rv("count", { n: S.count })} · ${esc(day(p.day))}${timed ? ` · ${rv("newScale")}` : ` · ${t("now.sore_scale")}`}`}</p>
       ${forecastHtml(p, "soreness", { draft })}</div>`;
 }
 
@@ -87,7 +88,7 @@ export function overviewHtml(p) {
       <div class="ov-body-stage"><p class="ov-model-message">${rv("loading")}</p></div>
       <div class="ov-rotation"><button type="button" data-ov-turn="-1" aria-label="${rv("rotateLeft")}">↶</button><span>${rv("rotate")}</span><button type="button" data-ov-turn="1" aria-label="${rv("rotateRight")}">↷</button><button type="button" class="ov-front">${rv("front")}</button></div>
       <div class="ov-legend"><span class="ov-sore-legend"><i class="ov-yellow-key"></i>${rv("light")} → ${rv("heavy")}</span><span class="ov-sore-legend"><i class="ov-none-key"></i>${rv("none")}</span><span class="ov-trained-legend" hidden><i class="ov-trained-key"></i>${rv("trainingLegend")}</span><span><i class="ov-unknown-key"></i>${rv("unknown")}</span></div>
-      <div class="ov-region-picker"><label for="ov-region">${rv("select")}</label><select id="ov-region"><option value="">${rv("choose")}</option>${p.regions.map(r => `<option value="${esc(r)}">${t(`sore.region.${r}`)}</option>`).join("")}</select></div>
+      <div class="ov-region-picker"><label for="ov-region">${rv("select")}</label><select id="ov-region"><option value="">${rv("choose")}</option>${p.areas.map(a => `<optgroup label="${esc(t(`sore.area.${a.area}`))}">${p.regions.filter(r => areaOf(r, p.areas) === a.area).map(r => `<option value="${esc(r)}">${t(`sore.region.${r}`)}</option>`).join("")}</optgroup>`).join("")}</select></div>
       <div class="ov-selection" aria-live="polite"><p>${rv("selectPrompt")}</p></div>
       <details class="ov-credit"><summary>${rv("modelCredit")}</summary><p>${rv("modelNote")}</p><a href="models/recovery/MODEL.md" target="_blank" rel="noopener">${rv("modelCredit")} ↗</a></details>
     </section>

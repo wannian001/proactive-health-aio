@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import state
-from .schema import SORE_REGIONS
+from .schema import ALL_SORE_REGIONS, SORE_REGIONS
 
 FILENAME = "recovery_observations.jsonl"
 REQUEST_ID = re.compile(r"[A-Za-z0-9_-]{8,80}\Z")
@@ -31,7 +31,7 @@ def read(cfg):
                 at = datetime.fromisoformat(r["at"])
                 valid = (r["v"] == 1 and at.tzinfo is not None and r["scale"] == 10
                          and r["kind"] in ("energy", "soreness")
-                         and (r["region"] in SORE_REGIONS if r["kind"] == "soreness" else r["region"] is None)
+                         and (r["region"] in ALL_SORE_REGIONS if r["kind"] == "soreness" else r["region"] is None)
                          and not isinstance(r["value"], bool) and isinstance(r["value"], (int, float))
                          and math.isfinite(r["value"]) and 0 <= r["value"] <= 10
                          and isinstance(r["id"], str) and bool(REQUEST_ID.fullmatch(r["request_id"])))

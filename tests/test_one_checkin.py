@@ -33,12 +33,13 @@ class OneCheckin(unittest.TestCase):
         js = read("js/pages/recovery.js")
         self.assertIn("Array.from({ length: 11 }", js)
         self.assertIn('["recovery-checkin", once("energy"', js)
-        self.assertNotIn("figureSvg(", js)  # soreness is chosen on the illustrated body above, not a second figure
+        self.assertNotIn("figureSvg(", js)  # soreness is said, or chosen on the 3D body above; there is no second figure
+        self.assertIn('["sore", { levels: { ...pending }', js)  # only the regions said or answered, never a whole day
 
     def test_rest_reads_body_from_the_same_answers(self):
         js = read("js/pages/recovery.js")
         self.assertIn('choice.energy <= 3 ? "tired" : choice.energy >= 6 ? "comfortable"', js)
-        self.assertIn("Object.values(levels).some((lv) => lv >= 2)", js)
+        self.assertIn("Object.values(shown()).some((lv) => lv >= 2)", js)
 
     def test_today_keeps_the_ring_on_top_and_rest_opens_the_list(self):
         js = read("js/pages/today.js")
@@ -122,14 +123,14 @@ class WordsAndFiles(unittest.TestCase):
         folder = WEB / "models" / "recovery"
         self.assertEqual(sorted(p.name for p in folder.iterdir()), ["MODEL.md", "body.bin"])
         blob = (folder / "body.bin").read_bytes()
-        self.assertEqual(blob[:4], b"HAB2")
+        self.assertEqual(blob[:4], b"HAB3")
         length = int.from_bytes(blob[4:8], "little")
         head = json.loads(blob[8:8 + length])
         self.assertEqual(tuple(head["regions"]), SORE_REGIONS + ("other",))
         self.assertEqual(sorted(head["anchors"]), sorted(SORE_REGIONS))
         n, t = head["vertices"], head["triangles"]
         self.assertLess(n, 65536)  # the triangles are uint16
-        body = 8 + length + n * 6 + (-(n * 6) % 4) + n * 4 + n * 4 + n * 8 + t * 6
+        body = 8 + length + n * 6 + (-(n * 6) % 4) + n * 4 + n * 4 + n * 4 + t * 6  # two regions and their mix a vertex
         # then the muscle lines, each block 4-byte aligned
         lv, lt = head["lines"]["vertices"], head["lines"]["triangles"]
         self.assertTrue(0 < lv < 65536 and lt > 0)

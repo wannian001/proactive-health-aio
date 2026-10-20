@@ -143,6 +143,11 @@ def available(cfg) -> Tuple[bool, Optional[str]]:
 
 
 def _ask_model(cfg, said: str) -> Dict[str, Any]:
+    return ask(cfg, SYSTEM, _schema(), said)
+
+
+def ask(cfg, system: str, schema: Dict[str, Any], said: str) -> Dict[str, Any]:
+    """One sentence to the model, answered as JSON in the given schema (shared by the readers of what you say)."""
     import anthropic
     client = anthropic.Anthropic(timeout=30.0, max_retries=2)
     response = client.beta.messages.create(
@@ -151,8 +156,8 @@ def _ask_model(cfg, said: str) -> Dict[str, Any]:
         # if the model declines (a safety classifier), Anthropic re-runs the request on its recommended fallback
         betas=["server-side-fallback-2026-07-01"],
         fallbacks="default",
-        system=SYSTEM,
-        output_config={"effort": cfg.assistant_effort, "format": {"type": "json_schema", "schema": _schema()}},
+        system=system,
+        output_config={"effort": cfg.assistant_effort, "format": {"type": "json_schema", "schema": schema}},
         messages=[{"role": "user", "content": said}],
     )
     if response.stop_reason == "refusal":

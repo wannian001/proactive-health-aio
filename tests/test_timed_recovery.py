@@ -159,11 +159,11 @@ class TimedRecovery(unittest.TestCase):
         self.assertEqual(forecast(points,"energy",NOW,{})["status"], "baseline_needed")
 
     def test_individual_region_does_not_mark_other_regions_zero(self):
-        recovery_log.from_browser(self.cfg,self.request(kind="soreness",region="torso",value=6),NOW)
+        recovery_log.from_browser(self.cfg,self.request(kind="soreness",region="chest",value=6),NOW)
         p=recovery.build(Context(self.cfg,now=NOW.replace(tzinfo=None)))
-        self.assertEqual(p["current_ratings"]["soreness"]["torso"]["value"],6)
-        self.assertNotIn("left_calf",p["current_ratings"]["soreness"])
-        self.assertEqual(p["forecast"]["soreness"]["left_calf"]["status"],"missing_current")
+        self.assertEqual(p["current_ratings"]["soreness"]["chest"]["value"],6)
+        self.assertNotIn("left_calf_back",p["current_ratings"]["soreness"])
+        self.assertEqual(p["forecast"]["soreness"]["left_calf_back"]["status"],"missing_current")
         json.dumps(p,default=str,allow_nan=False)
 
 

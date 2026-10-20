@@ -6,7 +6,6 @@ data_dir = "data"                 # where the CSV files live (relative to this f
 timezone = "Australia/Melbourne"  # IANA name; all times in the CSV files are local to it
 locale = "en"                     # en or zh; the page has a switch too
 title = "Health AIO"
-figure = "male"                   # male or female: the body figure the Recovery page draws for soreness
 
 # What `healthaio collect` (the Mac app, every 2 hours) imports by itself: Screen Time.
 # [collect]

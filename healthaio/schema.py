@@ -115,9 +115,34 @@ DEADLINE_STATUS = ("todo", "submitted", "done")
 MEALS = ("breakfast", "lunch", "dinner", "snack", "drink")
 EFFORT_SOURCES = ("rated", "estimated")
 FEELINGS = (2, 5, 8)  # the Recovery page's three answers to "how do you feel this morning?"
-# the body figure's seven regions (the soreness areas of the PMData wellness check-in), and "none" for a check-in
-# with nothing sore
-SORE_REGIONS = ("head", "torso", "pelvis", "left_upper_arm", "right_upper_arm", "left_calf", "right_calf")
+# Where it can be sore: places you can feel and name, a little finer than a whole limb. Most have a left and a right;
+# thighs and calves have four faces. Each is area[_side][_face] (sore_region builds them), in this order.
+SORE_AREAS = (  # area, sides, faces
+    ("neck", (), ("front", "back")),            # the back of the neck has a left and a right half: neck_back_left
+    ("shoulder", ("left", "right"), ("front", "back")),
+    ("chest", (), ()), ("upper_back", (), ()), ("abs", (), ()), ("low_back", (), ()),
+    ("glute", ("left", "right"), ()),
+    ("upper_arm", ("left", "right"), ()),
+    ("thigh", ("left", "right"), ("front", "back", "outer", "inner")),
+    ("calf", ("left", "right"), ("front", "back", "outer", "inner")),
+)
+
+
+def sore_region(area: str, side: Optional[str] = None, face: Optional[str] = None) -> str:
+    """The region id of an area, side and face: left_thigh_back, chest, neck_front, neck_back_left."""
+    if area == "neck":
+        return "neck_front" if face == "front" else f"neck_back_{side}"
+    return "_".join(x for x in (side, area, face) if x)
+
+
+SORE_REGIONS = tuple(
+    ["neck_front", "neck_back_left", "neck_back_right"]
+    + [sore_region(a, s, f) for a, sides, faces in SORE_AREAS if a != "neck"
+       for s in (sides or (None,)) for f in (faces or (None,))])
+# the seven of the first body figure (the PMData wellness check-in's areas): older rows keep them and are shown as
+# they were; nothing new is written with them (left_upper_arm and right_upper_arm are still current)
+LEGACY_REGIONS = ("head", "torso", "pelvis", "left_calf", "right_calf")
+ALL_SORE_REGIONS = SORE_REGIONS + LEGACY_REGIONS
 MAIN_MEALS = ("breakfast", "lunch", "dinner")
 
 TABLES: Dict[str, Table] = {t.name: t for t in (
@@ -210,31 +235,34 @@ TABLES: Dict[str, Table] = {t.name: t for t in (
     ),
     Table(
         name="soreness",
-        doc="Where you were sore in the morning and how much: one row per sore region, or a single row with region "
-            "`none` when you checked in and nothing was sore. A day without rows was not checked: unknown, never "
-            "\"not sore\". The Recovery page's morning check-in writes this file; you can also "
-            "write it by hand or import a CSV.",
+        doc="Where it was sore on a day and how much, one row per region. You say it when you feel it (Recovery's "
+            "\"Where does it hurt?\", in a sentence, typed or spoken), and the next days the page asks about it "
+            "until you say it is fine (level 0). A region without a row that day was not said: unknown, never "
+            "\"not sore\". Older files may hold a morning check-in's region `none` (nothing sore) and the first "
+            "figure's seven regions (head, torso, pelvis, left_calf, right_calf, and the upper arms); they are read "
+            "as they are. You can also write it by hand or import a CSV.",
         key=("date", "region"),
         sources=("the Recovery page's body figure", "typed by hand", "any CSV with these columns"),
         columns=(
             Column("date", "date", "The morning.", required=True),
-            Column("region", "text", "Which region (the body figure's seven), or none.", required=True,
-                   choices=SORE_REGIONS + ("none",)),
-            Column("level", "number", "1 a little, 2 clearly sore, 3 very sore; 0 with region none.", required=True,
-                   low=0, high=3),
+            Column("region", "text", "Which region (an older file may also hold the first figure's "
+                   + ", ".join(LEGACY_REGIONS) + ", or none).", required=True, choices=ALL_SORE_REGIONS + ("none",)),
+            Column("level", "number", "1 a little, 2 clearly sore, 3 very sore; 0 fine again (or with region none).",
+                   required=True, low=0, high=3),
+            Column("at", "datetime", "When it was said (optional)."),
+            Column("said", "text", "What you said, in your own words (optional)."),
         ),
     ),
     Table(
         name="workout_notes",
-        doc="What a workout trained: the regions of the body figure and a note in your own words (typed, or dictated "
-            "with the phone keyboard's microphone). After a strength session or a hard one (effort 7 or more) the pages "
-            "ask once; the next mornings' check-in then asks about those regions first. A row with no regions and no "
-            "note means you chose not to say.",
+        doc="What a workout trained: the regions (the soreness regions) and a note in your own words (typed, or "
+            "dictated with the phone keyboard's microphone). After a strength session or a hard one (effort 7 or more) "
+            "the pages ask once. A row with no regions and no note means you chose not to say.",
         key=("start",),
         sources=("the after-workout prompt on any page", "healthaio trained", "typed by hand"),
         columns=(
             Column("start", "datetime", "The workout's start, as in workouts.csv.", required=True),
-            Column("regions", "text", "The regions trained, separated by spaces: " + ", ".join(SORE_REGIONS) + "."),
+            Column("regions", "text", "The regions trained, separated by spaces (the soreness regions)."),
             Column("note", "text", "What you trained, in your own words, e.g. bench, rows, curls."),
         ),
     ),

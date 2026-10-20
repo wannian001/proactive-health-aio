@@ -368,9 +368,9 @@ class Sam:
                               "kcal": 342, "avg_hr": 161, "effort": 8.0, "effort_source": "rated"})
 
     def workout_notes(self) -> List[Dict]:
-        """What Sam wrote about his strength sessions and hard runs: most of them, those of the last four days always
-        (so this week's check-ins ask about them), never today's run. Monday is upper body, Friday lower, as in
-        soreness(); the notes use the words the page turns into regions."""
+        """What Sam wrote about his strength sessions and hard runs: most of them, those of the last four days always,
+        never today's run. Monday is upper body, Friday lower; the regions are the ones the note's words name."""
+        from .checkin import regions_in
         rng = random.Random(SEED + 41)
         upper = ("Bench, rows, curls", "Pull-ups, bench press, dips", "Chest and back, then arms")
         lower = ("Squats, deadlifts, calf raises", "Leg day: squats and lunges", "Deadlifts, hip thrusts, calf raises")
@@ -382,56 +382,66 @@ class Sam:
                 continue
             if (self.today - day).days > 4 and rng.random() < 0.2:
                 continue  # not written that time
-            if w["type"] == "strength training" and day.weekday() == 0:
-                regions, note = ("torso", "left_upper_arm", "right_upper_arm"), rng.choice(upper)
-            elif w["type"] == "strength training":
-                regions, note = ("pelvis", "left_calf", "right_calf"), rng.choice(lower)
-            else:
-                regions, note = ("left_calf", "right_calf"), rng.choice(runs)
-            rows.append({"start": w["start"], "regions": " ".join(regions), "note": note})
+            note = rng.choice(upper if w["type"] == "strength training" and day.weekday() == 0
+                              else lower if w["type"] == "strength training" else runs)
+            rows.append({"start": w["start"], "regions": " ".join(regions_in(note)), "note": note})
         return rows
 
+    # what Sam says the morning after, and the levels of the places; the next mornings he answers how each is now
+    SORE_SAYS = {
+        "upper": ("Chest is sore from the bench, fronts of both shoulders and upper arms too",
+                  {"chest": 0, "left_shoulder_front": -1, "right_shoulder_front": -1, "left_upper_arm": 0, "right_upper_arm": 0}),
+        "lower": ("Fronts of both thighs and my glutes are sore after squats, calves a bit",
+                  {"left_thigh_front": 0, "right_thigh_front": 0, "left_glute": 0, "right_glute": 0,
+                   "left_calf_back": -1, "right_calf_back": -1}),
+        "run": ("Backs of both calves a bit sore after the run", {"left_calf_back": 0, "right_calf_back": 0}),
+        "neck": ("Back of my neck is a bit stiff after a day at the desk", {"neck_back_left": 0, "neck_back_right": 0}),
+    }
+
     def soreness(self) -> List[Dict]:
-        """Morning check-ins on nine mornings in ten after a workout and one in two otherwise (the morning after is
-        when Sam wants to know how he came back): the regions a workout loads are sore the next morning
-        and fading the one after (upper-body strength on Mondays: torso and upper arms; lower body on Fridays: hips
-        and calves; runs: calves), now and then a stiff neck, and a check-in with nothing sore otherwise. He always
-        checks in this morning, after a long Sunday at the desk: a stiff neck if nothing else is sore."""
+        """Soreness as Sam says it: the morning after most strength sessions and hard runs (upper body on Mondays:
+        chest, shoulders, upper arms; lower body on Fridays: thighs, glutes, calves; runs: calves), now and then a
+        stiff neck after the desk; then on the following mornings he answers how each place is now (a level lower each
+        day, often; fine is 0), until it is fine. Today's answers are left for the page to ask, and this morning he says
+        his neck is stiff after a long Sunday at the desk."""
         rng = random.Random(SEED + 31)
-        hits: Dict[date, Dict[str, int]] = {}
-        for w in self.workouts:
-            day = w["start"].date()
-            if w["type"] == "strength training":
-                regions = ["torso", "left_upper_arm", "right_upper_arm"] if day.weekday() == 0 else ["pelvis", "left_calf", "right_calf"]
-                first = 2 if (w.get("effort") or 6) < 8 else 3
-            elif w["type"] == "running":
-                regions, first = ["left_calf", "right_calf"], 1
-            else:
-                continue
-            for lag, level in ((1, first), (2, first - 1)):
-                if level <= 0:
-                    continue
-                spot = hits.setdefault(day + timedelta(days=lag), {})
-                for region in regions:
-                    if rng.random() < 0.85:
-                        spot[region] = max(spot.get(region, 0), max(1, level - (1 if rng.random() < 0.25 else 0)))
-        after = {w["start"].date() + timedelta(days=1) for w in self.workouts}
-        rows: List[Dict] = []
+        rows: Dict[Tuple[date, str], Dict] = {}
         start = self.today - timedelta(days=BODY_DAYS - 1)
-        for k in range(BODY_DAYS):
-            day = start + timedelta(days=k)
-            if rng.random() > (0.9 if day in after else 0.5) and day != self.today:
-                continue  # no check-in that morning
-            sore = dict(hits.get(day, {}))
-            if rng.random() < 0.05:
-                sore["head"] = 1
-            if day == self.today and not sore:
-                sore["head"] = 1
-            if not sore:
-                rows.append({"date": day, "region": "none", "level": 0})
-            for region, level in sorted(sore.items()):
-                rows.append({"date": day, "region": region, "level": level})
-        return rows
+
+        def say(day: date, kind: str, first: int) -> None:
+            words, places = self.SORE_SAYS[kind]
+            at = datetime.combine(day, time(7, 40)) + timedelta(minutes=rng.randint(0, 90))
+            levels = {r: max(1, first + d) for r, d in places.items() if rng.random() < 0.9}
+            for k in range(0, 6):
+                d = day + timedelta(days=k)
+                if d >= self.today and k:
+                    break  # today's answers are the page's to ask
+                if k and rng.random() < 0.15:
+                    break  # a morning he did not answer: unknown from then on
+                for region, level in list(levels.items()):
+                    rows[(d, region)] = {"date": d, "region": region, "level": level,
+                                         "at": (at + timedelta(days=k, minutes=rng.randint(-20, 20))).strftime("%Y-%m-%dT%H:%M"),
+                                         "said": words if k == 0 else ""}
+                    if level == 0:
+                        del levels[region]
+                    else:
+                        levels[region] = level - 1 if rng.random() < 0.75 else level
+                if not levels:
+                    break
+
+        for w in sorted(self.workouts, key=lambda x: x["start"]):
+            day = w["start"].date() + timedelta(days=1)
+            if day < start or day > self.today or rng.random() > 0.85:
+                continue
+            if w["type"] == "strength training":
+                say(day, "upper" if w["start"].weekday() == 0 else "lower", 2 if (w.get("effort") or 6) < 8 else 3)
+            elif w["type"] == "running" and (w.get("effort") or 0) >= 6:
+                say(day, "run", 1)
+        for k in range(BODY_DAYS - 1):
+            if rng.random() < 0.04:
+                say(start + timedelta(days=k), "neck", 1)
+        say(self.today, "neck", 1)
+        return [rows[k] for k in sorted(rows, key=lambda k: (k[0], k[1]))]
 
     def rest_history(self, cfg) -> None:
         """Six weeks of Rest & rewards, written through restore_log like the page does: on about half the days Sam

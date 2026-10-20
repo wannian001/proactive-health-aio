@@ -93,26 +93,28 @@ Key: `date`. Typical sources: typed by hand; an assistant that writes this file 
 
 ## `soreness.csv`
 
-Where you were sore in the morning and how much: one row per sore region, or a single row with region `none` when you checked in and nothing was sore. A day without rows was not checked: unknown, never "not sore". The Recovery page's morning check-in writes this file; you can also write it by hand or import a CSV.
+Where it was sore on a day and how much, one row per region. You say it when you feel it (Recovery's "Where does it hurt?", in a sentence, typed or spoken), and the next days the page asks about it until you say it is fine (level 0). A region without a row that day was not said: unknown, never "not sore". Older files may hold a morning check-in's region `none` (nothing sore) and the first figure's seven regions (head, torso, pelvis, left_calf, right_calf, and the upper arms); they are read as they are. You can also write it by hand or import a CSV.
 
 Key: `date`, `region`. Typical sources: the Recovery page's body figure; typed by hand; any CSV with these columns.
 
 | column | type | required | meaning |
 |---|---|---|---|
 | `date` | date | yes | The morning. |
-| `region` | text | yes | Which region (the body figure's seven), or none. One of: `head`, `torso`, `pelvis`, `left_upper_arm`, `right_upper_arm`, `left_calf`, `right_calf`, `none`. |
-| `level` | number | yes | 1 a little, 2 clearly sore, 3 very sore; 0 with region none. |
+| `region` | text | yes | Which region (an older file may also hold the first figure's head, torso, pelvis, left_calf, right_calf, or none). One of: `neck_front`, `neck_back_left`, `neck_back_right`, `left_shoulder_front`, `left_shoulder_back`, `right_shoulder_front`, `right_shoulder_back`, `chest`, `upper_back`, `abs`, `low_back`, `left_glute`, `right_glute`, `left_upper_arm`, `right_upper_arm`, `left_thigh_front`, `left_thigh_back`, `left_thigh_outer`, `left_thigh_inner`, `right_thigh_front`, `right_thigh_back`, `right_thigh_outer`, `right_thigh_inner`, `left_calf_front`, `left_calf_back`, `left_calf_outer`, `left_calf_inner`, `right_calf_front`, `right_calf_back`, `right_calf_outer`, `right_calf_inner`, `head`, `torso`, `pelvis`, `left_calf`, `right_calf`, `none`. |
+| `level` | number | yes | 1 a little, 2 clearly sore, 3 very sore; 0 fine again (or with region none). |
+| `at` | datetime |  | When it was said (optional). |
+| `said` | text |  | What you said, in your own words (optional). |
 
 ## `workout_notes.csv`
 
-What a workout trained: the regions of the body figure and a note in your own words (typed, or dictated with the phone keyboard's microphone). After a strength session or a hard one (effort 7 or more) the pages ask once; the next mornings' check-in then asks about those regions first. A row with no regions and no note means you chose not to say.
+What a workout trained: the regions (the soreness regions) and a note in your own words (typed, or dictated with the phone keyboard's microphone). After a strength session or a hard one (effort 7 or more) the pages ask once. A row with no regions and no note means you chose not to say.
 
 Key: `start`. Typical sources: the after-workout prompt on any page; healthaio trained; typed by hand.
 
 | column | type | required | meaning |
 |---|---|---|---|
 | `start` | datetime | yes | The workout's start, as in workouts.csv. |
-| `regions` | text |  | The regions trained, separated by spaces: head, torso, pelvis, left_upper_arm, right_upper_arm, left_calf, right_calf. |
+| `regions` | text |  | The regions trained, separated by spaces (the soreness regions). |
 | `note` | text |  | What you trained, in your own words, e.g. bench, rows, curls. |
 
 ## `screen_sessions.csv`

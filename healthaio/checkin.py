@@ -1,12 +1,11 @@
-"""The check-ins: in the morning on the Recovery page, how you feel (2, 5 or 8) and where you are sore; after a
-strength or hard workout, from the prompt on any page, what it trained (see schema.py).
+"""The check-ins: on the Recovery page, how you feel this morning (2, 5 or 8) and where it is sore; after a strength
+or hard workout, from the prompt on any page, what it trained (see schema.py).
 
-One check-in writes two tables: the feeling goes into that morning's row of self_report.csv (`feel` and optional 0–5 `energy`; focus and
-the note on that row stay as they were), the soreness replaces that morning's rows in soreness.csv. Saving with no
-region tapped writes one soreness row, region `none`, so "checked, nothing sore" and "not checked" stay apart; saving
-without a feeling or energy value preserves that field. Rows of other days are never touched, and rows that do not parse (a
-hand-edited file) are kept as written. `healthaio checkin` does the same from the command line (for a script or an
-assistant).
+Soreness is said when it is felt: report() updates only the regions you name, for today, with the time and what you
+said, and keeps today's other regions; the next days' answers ("fine now" is level 0) go the same way. The morning
+feeling goes into that morning's row of self_report.csv (`feel` and optional 0–5 `energy`; focus and the note on that
+row stay as they were). Rows of other days are never touched, and rows that do not parse (a hand-edited file) are kept
+as written. `healthaio checkin` replaces a whole day's soreness from the command line (for a script or an assistant).
 
 What a workout trained replaces that workout's row in workout_notes.csv: the regions tapped on the figure and a note
 in your own words. Words in the note suggest regions (REGION_WORDS; the page shows them as you type and you can
@@ -26,21 +25,30 @@ from .store import write_table
 LEVELS = (1, 2, 3)  # a little, clearly sore, very sore
 NOTE_MAX = 500
 
-# Words in a note -> regions of the figure, Chinese and English. Longer words are tried first and a matched word is
-# used up, so 小腿 is not also 腿 and "leg press" is not also "leg"; English words match whole, with a plural s or es.
-# Shoulders and thighs have no region of their own on the figure, so they suggest nothing.
-UPPER_ARMS = ("left_upper_arm", "right_upper_arm")
-CALVES = ("left_calf", "right_calf")
+# Words in a workout note -> the regions it trained, Chinese and English. Longer words are tried first and a matched
+# word is used up, so 小腿 is not also 腿 and "leg press" is not also "leg"; English words match whole, with a plural
+# s or es. A lift names the places it works: a bench press the chest, the fronts of the shoulders and the upper arms.
+both = lambda *names: tuple(f"{side}_{n}" for side in ("left", "right") for n in names)
+UPPER_ARMS = both("upper_arm")
 REGION_WORDS: Tuple[Tuple[Tuple[str, ...], Tuple[str, ...]], ...] = (
-    (("颈", "脖子", "耸肩", "neck", "shrug"), ("head",)),
-    (("胸", "背", "腹", "核心", "腰", "卧推", "划船", "引体", "飞鸟", "平板支撑",
-      "chest", "back", "abs", "core", "bench", "row", "pull-up", "pullup", "plank"), ("torso",)),
-    (("臀", "髋", "硬拉", "深蹲", "箭步蹲", "腿举", "glute", "hip", "deadlift", "squat", "lunge", "leg press"), ("pelvis",)),
+    (("颈", "脖子", "耸肩", "neck", "shrug"), ("neck_back_left", "neck_back_right")),
+    (("卧推", "俯卧撑", "bench", "push-up", "pushup"), ("chest",) + both("shoulder_front", "upper_arm")),
+    (("胸", "飞鸟", "chest", "fly", "flye"), ("chest",)),
+    (("肩", "推举", "侧平举", "shoulder", "overhead press", "lateral raise"), both("shoulder_front")),
+    (("划船", "引体", "高位下拉", "row", "pull-up", "pullup", "pulldown"), ("upper_back",) + UPPER_ARMS),
+    (("背", "back", "lat"), ("upper_back",)),
+    (("腹", "核心", "卷腹", "平板支撑", "abs", "core", "crunch", "plank"), ("abs",)),
+    (("硬拉", "deadlift"), ("low_back",) + both("glute", "thigh_back")),
+    (("腰", "下背", "lower back"), ("low_back",)),
+    (("臀", "髋", "臀推", "glute", "hip", "hip thrust"), both("glute")),
+    (("深蹲", "箭步蹲", "腿举", "squat", "lunge", "leg press"), both("thigh_front", "glute")),
+    (("腘绳", "腿弯举", "hamstring", "leg curl"), both("thigh_back")),
     (("手臂", "胳膊", "二头", "三头", "肱", "弯举", "臂屈伸", "arm", "bicep", "tricep", "curl", "dip"), UPPER_ARMS),
-    (("小腿", "提踵", "跑", "calf", "calves", "calf raise", "run", "running", "jog"), CALVES),
-    (("腿", "下肢", "leg", "lower body"), ("pelvis",) + CALVES),
-    (("上肢", "俯卧撑", "upper body", "push-up", "pushup"), ("torso",) + UPPER_ARMS),
-    (("全身", "full body"), ("torso", "pelvis") + UPPER_ARMS + CALVES),
+    (("小腿", "提踵", "calf", "calves", "calf raise"), both("calf_back")),
+    (("跑", "run", "running", "jog"), both("calf_back", "thigh_front")),
+    (("腿", "下肢", "leg", "lower body"), both("thigh_front", "thigh_back", "calf_back")),
+    (("上肢", "upper body"), ("chest", "upper_back") + both("shoulder_front", "shoulder_back", "upper_arm")),
+    (("全身", "full body"), ("chest", "upper_back", "abs") + both("shoulder_front", "upper_arm", "glute", "thigh_front", "calf_back")),
 )
 
 
@@ -60,8 +68,9 @@ class CheckinError(ValueError):
     """A check-in that cannot be written: an unknown region, a level or feeling out of range, a day not yet come."""
 
 
-def check(levels: Any) -> Dict[str, int]:
-    """The soreness as {region: level} with only sore regions, after validating everything."""
+def check(levels: Any, keep_zero: bool = False) -> Dict[str, int]:
+    """The soreness as {region: level} after validating everything: only sore regions, or with keep_zero also the ones
+    said to be fine again (0)."""
     if not isinstance(levels, dict):
         raise CheckinError("levels must be an object of region: level")
     out: Dict[str, int] = {}
@@ -69,6 +78,8 @@ def check(levels: Any) -> Dict[str, int]:
         if region not in SORE_REGIONS:
             raise CheckinError(f"unknown region {region!r}; one of {', '.join(SORE_REGIONS)}")
         if level in (0, None):
+            if keep_zero and level == 0:
+                out[region] = 0
             continue
         if isinstance(level, bool) or level not in LEVELS:
             raise CheckinError(f"{region}: level must be 0 to 3")
@@ -131,6 +142,34 @@ def save(cfg, day: date, levels: Optional[Dict[str, int]], feel: Optional[int] =
                 mine["energy"] = str(energy)
             write_table(cfg.data_dir, "self_report", sorted(rows, key=lambda r: r.get("date") or ""))
     return {"ok": True, "date": stamp, "levels": levels, "feel": feel, "energy": energy}
+
+
+SAID_MAX = 280
+
+
+def report(cfg, now: datetime, levels: Dict[str, int], said: str = "") -> Dict[str, Any]:
+    """Today's soreness for the regions named (0 is fine again), with the time and what was said; today's other
+    regions and every other day stay as they were. The write lock is the importers'."""
+    if not levels:
+        raise CheckinError("name at least one region")
+    if not isinstance(said, str) or len(said) > SAID_MAX:
+        raise CheckinError(f"what you said: at most {SAID_MAX} characters")
+    said = " ".join(said.split())
+    stamp, at = now.date().isoformat(), now.replace(tzinfo=None).strftime("%Y-%m-%dT%H:%M")
+    with state.write_lock(cfg):
+        rows = [r for r in _rows(Path(cfg.data_dir) / TABLES["soreness"].filename)
+                if not ((r.get("date") or "").strip() == stamp and (r.get("region") or "").strip() in levels | {"none": 0})]
+        rows += [{"date": stamp, "region": region, "level": str(level), "at": at, "said": said} for region, level in levels.items()]
+        write_table(cfg.data_dir, "soreness", sorted(rows, key=lambda r: (r.get("date") or "", r.get("region") or "")))
+    return {"ok": True, "date": stamp, "at": at, "levels": levels, "said": said}
+
+
+def report_from_browser(cfg, request: Any, now: Optional[datetime] = None) -> Dict[str, Any]:
+    """POST /api/sore: {"levels": {"left_thigh_back": 2, ...}, "said": "..."} — the regions said, or answered."""
+    if not isinstance(request, dict) or set(request) - {"levels", "said", "parsed_by"}:
+        raise CheckinError("send levels, and optionally said and parsed_by")
+    now = now or datetime.now(cfg.tz)
+    return report(cfg, now, check(request.get("levels"), keep_zero=True), request.get("said") or "")
 
 
 def check_trained(regions: Any, note: Any) -> Tuple[List[str], str]:

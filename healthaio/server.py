@@ -8,8 +8,9 @@ origin/device write boundary as check-ins applies; neither changes measured heal
 Binds to 127.0.0.1 by default. The pages only read the data; it changes by editing or importing the CSV files, or by
 a package from the paired iPhone app. The browser can write three things, and only from a page this server served
 itself, plus the rest log above: a goal (POST /api/goals: set one, or answer an assistant's proposal), added as a line to goals.jsonl next to
-healthaio.toml; the morning check-in (POST /api/checkin: how you feel and where you are sore), which replaces
-that morning's soreness rows and sets that morning's feeling; and what a workout trained (POST /api/trained), which
+healthaio.toml; the morning check-in (POST /api/checkin: how you feel), which sets that morning's feeling; where it is
+sore when you say it (POST /api/sore: today's rows of the regions named, read from a sentence by POST /api/sore-parse);
+and what a workout trained (POST /api/trained), which
 replaces that workout's row in workout_notes.csv. ``--lan`` lets phones on your home network or Tailscale in: they need a token from pairing,
 and nobody else is answered (docs/CAPTURE.md).
 """
@@ -27,7 +28,7 @@ from typing import Any, Callable, Dict, Optional
 from urllib.parse import parse_qs, urlsplit
 
 from . import __version__, capture, goal_log, iphone, kit, phone, update
-from . import assistant, care_log, checkin, restore_log, recovery_log
+from . import assistant, care_log, checkin, restore_log, recovery_log, sore_say
 from .config import Config
 from .context import Context
 from .modules import PAGES
@@ -239,6 +240,10 @@ def make_handler(cfg: Config, now: Callable[[], Optional[datetime]] = lambda: No
                 return self._checkin(care_log.from_browser)
             if path == "/api/care-parse":  # reads a sentence; with [assistant] on, it is the one request that leaves this computer for it
                 return self._checkin(assistant.from_browser)
+            if path == "/api/sore":
+                return self._checkin(checkin.report_from_browser)
+            if path == "/api/sore-parse":  # reads a sentence, like care-parse (the assistant only when it is on)
+                return self._checkin(sore_say.from_browser)
             return self._json(404, {"error": "nothing to write here"})
 
         def _same_site(self) -> bool:

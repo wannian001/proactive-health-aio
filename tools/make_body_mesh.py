@@ -16,10 +16,9 @@ fitness chart draws them. In order (models/recovery/MODEL.md says the same for r
 3. a relaxed stance by linear blend skinning: the elbows straightened from MakeHuman's bent rest pose (a few degrees
    of bend kept), then the arms lowered about the shoulders
 4. the shorts: Taubin smoothing (which keeps volume) until the fabric hides what is under it, then 5 mm proud
-5. one Catmull-Clark subdivision, for round outlines; then each vertex's region, one of the seven check-in regions
-   (schema.SORE_REGIONS) or "other" (forearms, hands, thighs, feet): the arms are what the skeleton's weights put on
-   the arm bones, split at the elbow; the rest is cut by height at the skeleton's joints (mid-neck, waist, below the
-   crotch, knee, ankle); six passes of averaging over neighbours soften the edges
+5. one Catmull-Clark subdivision, for round outlines; then each vertex's region, one of the 31 places soreness is
+   said for (schema.SORE_REGIONS) or "other" (head, forearms, hands, feet): see label_regions(); six passes of
+   averaging over neighbours soften the edges, and each vertex keeps its two strongest
 6. a toy's build: the whole skin rounded by Taubin smoothing, the hands three times as much
 7. the muscle lines: polylines drawn in a front and a back view, hung from the skeleton's heights (under the
    pectorals, the abdomen's six blocks, the spine, trapezius, shoulder blades, lats, kneecaps, thighs, shins, calves),
@@ -32,9 +31,10 @@ fitness chart draws them. In order (models/recovery/MODEL.md says the same for r
 9. vertex normals; ambient occlusion baked per vertex from 160 directions (how much of the sky each point sees);
    a few surface points per region for the page's marker; then one little-endian file:
 
-   "HAB2", uint32 header length, the JSON header (space-padded to 4 bytes), then
+   "HAB3", uint32 header length, the JSON header (space-padded to 4 bytes), then
    positions int16 x3 (padded to 4 bytes), normals int8 x4 (xyz, 0), extra uint8 x4 (occlusion, cloth, 0, 0),
-   region shares uint8 x8, triangles uint16 x3; then, each block 4-byte aligned, the muscle lines' positions
+   regions uint8 x4 (the strongest region's index, the second's, the first's part of the two x 255, 0),
+   triangles uint16 x3; then, each block 4-byte aligned, the muscle lines' positions
    int16 x3 and triangles uint16 x3 (counts in the header's "lines")
 
 Positions are metres, the soles at y = 0, facing +z, the person's left at +x. A position is center + q / 32767 * extent.
@@ -45,6 +45,7 @@ import argparse
 import json
 import math
 import struct
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -54,7 +55,10 @@ COMMIT = "a8bc2d54ff0ac92e78ff71431b1023eda42bf482"
 RAW = f"https://raw.githubusercontent.com/makehumancommunity/makehuman/{COMMIT}/makehuman/data"
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "healthaio" / "web" / "models" / "recovery" / "body.bin"
-REGIONS = ("head", "torso", "pelvis", "left_upper_arm", "right_upper_arm", "left_calf", "right_calf", "other")
+sys.path.insert(0, str(ROOT))
+from healthaio.schema import SORE_REGIONS  # noqa: E402  (the app's own list, in its order)
+
+REGIONS = SORE_REGIONS + ("other",)
 LEVELS = ("min", "average", "max")
 RACES = ("african", "asian", "caucasian")
 
@@ -352,6 +356,81 @@ def ribbons(strokes, P, N, keep, width=0.0055):
     return np.concatenate(verts), np.concatenate(tris)
 
 
+def label_regions(P: np.ndarray, arm: dict, along: dict, m: dict) -> np.ndarray:
+    """Each point's region (an index into REGIONS). The arms are what the skeleton's weights put on the arm bones: the
+    deltoid (the first 36% of the way to the elbow) is the shoulder, split front and back at the shoulder joint, then
+    the upper arm to the elbow. The neck runs from its base to under the chin in front and to the skull behind, cut
+    front and back at its middle, the back in halves. The torso is cut front and back at its own middle, height by
+    height: the chest down to a little under the breast joints, then the abs (in the hips, the middle of the front;
+    its sides go to the thighs); behind, the upper back down to 15 cm above the waist, the lower back to the waist,
+    then the glutes. Below the gluteal fold, each leg is cut in four by the angle round its own middle, height by
+    height: front, back, outside, inside; the thigh to the knee, the calf to the ankle."""
+    idx = {r: i for i, r in enumerate(REGIONS)}
+    x, y, z = P[:, 0], P[:, 1], P[:, 2]
+    lab = np.full(len(P), idx["other"])
+    body = (arm["L"] + arm["R"]) < 0.5
+    zc = np.interp(y, *m["middle"])
+    front = z > zc
+    side = np.where(x > 0, "left", "right")
+    put = lambda where, name: lab.__setitem__(where, idx[name])
+    # the neck
+    top = m["neck_top"] - 0.045 * np.clip((z - zc) / 0.05, 0, 1)
+    neck = body & (y >= m["neck_base"]) & (y < top) & (np.hypot(x, z - zc) < m["neck_r"])
+    put(neck & front, "neck_front")
+    put(neck & ~front & (x > 0), "neck_back_left")
+    put(neck & ~front & (x <= 0), "neck_back_right")
+    # the torso and hips
+    torso = body & (y < m["neck_base"]) & (y >= m["crotch"] - 0.03)
+    chest_low, back_low = m["chest"] - 0.06, m["waist"] + 0.15
+    put(torso & front & (y >= chest_low), "chest")
+    put(torso & front & (y < chest_low) & ((y >= m["waist"]) | (np.abs(x) < 0.08)), "abs")
+    hip_front = torso & front & (y < m["waist"]) & (np.abs(x) >= 0.08)
+    for s in ("left", "right"):
+        put(hip_front & (side == s), f"{s}_thigh_front")
+        put(torso & ~front & (y < m["waist"]) & (side == s), f"{s}_glute")
+    put(torso & ~front & (y >= back_low), "upper_back")
+    put(torso & ~front & (y < back_low) & (y >= m["waist"]), "low_back")
+    # the legs
+    legs = body & (y < m["crotch"] - 0.03) & (y > m["ankle"] + 0.02)
+    for s, sign in (("left", 1), ("right", -1)):
+        mine = legs & (np.sign(x) == sign)
+        xc, zl = np.interp(y, *m["legs"][s][0]), np.interp(y, *m["legs"][s][1])
+        theta = np.arctan2(z - zl, (x - xc) * sign)
+        face = np.where(np.abs(theta) < np.pi / 4, "outer", np.where(np.abs(theta) > 3 * np.pi / 4, "inner",
+                        np.where(theta > 0, "front", "back")))
+        for f in ("front", "back", "outer", "inner"):
+            put(mine & (face == f) & (y >= m["knee"] + 0.02), f"{s}_thigh_{f}")
+            put(mine & (face == f) & (y < m["knee"] + 0.02), f"{s}_calf_{f}")
+    # the arms
+    for key, s in (("L", "left"), ("R", "right")):
+        on = arm[key] > 0.5
+        put(on & (along[key] < 0.36) & (z >= m["shoulder_z"][key]), f"{s}_shoulder_front")
+        put(on & (along[key] < 0.36) & (z < m["shoulder_z"][key]), f"{s}_shoulder_back")
+        put(on & (along[key] >= 0.36) & (along[key] < 1), f"{s}_upper_arm")
+    return lab
+
+
+def middles(P: np.ndarray, arm: dict, crotch: float) -> dict:
+    """Height by height (1 cm bins): the middle of the body without its arms, front to back, and of each leg."""
+    body = (arm["L"] + arm["R"]) < 0.5
+    bins = np.arange(P[:, 1].min(), P[:, 1].max(), 0.01)
+    mid, legs = ([], []), {"left": (([], []), ([], [])), "right": (([], []), ([], []))}
+    for lo in bins:
+        slab = body & (P[:, 1] >= lo) & (P[:, 1] < lo + 0.01)
+        core = slab & (np.abs(P[:, 0]) < 0.12)
+        if core.sum() > 4:
+            mid[0].append(lo + 0.005)
+            mid[1].append((P[core, 2].max() + P[core, 2].min()) / 2)
+        if lo < crotch:
+            for s, sign in (("left", 1), ("right", -1)):
+                leg = slab & (np.sign(P[:, 0]) == sign)
+                if leg.sum() > 4:
+                    for k, axis in ((0, 0), (1, 2)):
+                        legs[s][k][0].append(lo + 0.005)
+                        legs[s][k][1].append((P[leg, axis].max() + P[leg, axis].min()) / 2)
+    return {"middle": mid, "legs": legs}
+
+
 def catmull_clark(P: np.ndarray, quads: np.ndarray, attrs: np.ndarray):
     """One Catmull-Clark step on a closed quad mesh; per-vertex attributes are carried along linearly."""
     nv, nf = len(P), len(quads)
@@ -498,19 +577,14 @@ def main():
     attrs = np.stack([arm["L"], arm["R"], cloth], axis=1)
     P, quads, attrs = catmull_clark(P, quads, attrs)
     arm, cloth = {"L": attrs[:, 0], "R": attrs[:, 1]}, attrs[:, 2]
-    y = P[:, 1]
-    label = np.full(len(P), REGIONS.index("other"))
-    label[y >= neck_y] = REGIONS.index("head")
-    label[(y < neck_y) & (y >= waist_y)] = REGIONS.index("torso")
-    label[(y < waist_y) & (y >= crotch_y - 0.02)] = REGIONS.index("pelvis")
-    calf = (y < knee_y) & (y >= ankle_y)
-    label[calf & (P[:, 0] > 0)] = REGIONS.index("left_calf")
-    label[calf & (P[:, 0] <= 0)] = REGIONS.index("right_calf")
-    for side, name in (("L", "left_upper_arm"), ("R", "right_upper_arm")):
+    along = {}
+    for side in "LR":
         axis = elbow_now[side] - shoulder_now[side]
-        along = (P - (shoulder_now[side] + shift)) @ axis / (axis @ axis)
-        label[arm[side] > 0.5] = REGIONS.index("other")
-        label[(arm[side] > 0.5) & (along < 1)] = REGIONS.index(name)
+        along[side] = (P - (shoulder_now[side] + shift)) @ axis / (axis @ axis)
+    marks = {"neck_base": y_of("neck01") - 0.01, "neck_top": neck_y + 0.04, "neck_r": 0.085, "chest": y_of("breast.L"),
+             "waist": waist_y, "crotch": crotch_y, "knee": knee_y, "ankle": ankle_y,
+             "shoulder_z": {s: shoulder_now[s][2] + shift[2] for s in "LR"}, **middles(P, arm, crotch_y)}
+    label = label_regions(P, arm, along, marks)
     assert P[label == REGIONS.index("left_upper_arm"), 0].mean() > 0, "MakeHuman's .L bones should be the person's left, at +x"
     R = np.eye(len(REGIONS))[label]
     edges = edges_of(quads)
@@ -522,7 +596,7 @@ def main():
         R = (R + near / degree) / 2
     tris = np.concatenate([quads[:, [0, 1, 2]], quads[:, [0, 2, 3]]])
     N = quad_normals(P, quads)
-    chest = (R[:, REGIONS.index("torso")] > 0.9) & (np.abs(P[:, 0]) < 0.03) & (P[:, 2] > 0)
+    chest = (R[:, REGIONS.index("chest")] > 0.9) & (np.abs(P[:, 0]) < 0.03) & (P[:, 2] > 0)
     outward = 1 if N[chest, 2].mean() >= 0 else -1
     if outward < 0:  # faces wound the other way: flip both
         tris = tris[:, [0, 2, 1]]
@@ -560,14 +634,24 @@ def main():
     remap = -np.ones(len(P), dtype=np.int64)
     remap[kept] = np.arange(len(kept))
     P, R, cloth, tris = P[kept], R[kept], cloth[kept], remap[tris]
-    head_share = np.clip((head_P[:, 1] - neck_y) / 0.01 + 0.5, 0, 1)
-    shares = np.zeros((len(head_P), len(REGIONS)))
-    shares[:, REGIONS.index("head")], shares[:, REGIONS.index("torso")] = head_share, 1 - head_share
+    none = np.zeros(len(head_P))
+    shares = np.eye(len(REGIONS))[label_regions(head_P, {"L": none, "R": none}, {"L": none, "R": none}, marks)]
     P = np.concatenate([P, head_P])
     R = np.concatenate([R, shares])
     cloth = np.concatenate([cloth, np.zeros(len(head_P))])
     tris = np.concatenate([tris, head_tris + len(kept)])
     N = tri_normals(P, tris)
+    # the head's regions take the body's soft edges too, then each vertex keeps its two strongest
+    head_edges = tri_edges(head_tris) + len(kept)
+    head_deg = np.maximum(np.bincount(head_edges.ravel(), minlength=len(P)), 1)[:, None]
+    for _ in range(4):
+        near = np.zeros_like(R)
+        np.add.at(near, head_edges[:, 0], R[head_edges[:, 1]])
+        np.add.at(near, head_edges[:, 1], R[head_edges[:, 0]])
+        R = np.where(np.arange(len(P))[:, None] >= len(kept), (R + near / head_deg) / 2, R)
+    top2 = np.argsort(-R, axis=1)[:, :2]
+    first, second = R[np.arange(len(P)), top2[:, 0]], R[np.arange(len(P)), top2[:, 1]]
+    mix = first / np.maximum(first + second, 1e-9)
     print(f"neck and head: {len(head_P)} vertices from marching cubes, from {band:.3f} m up")
 
     # 9. occlusion, marker points
@@ -580,7 +664,7 @@ def main():
 
     anchors = {}
     for i, name in enumerate(REGIONS[:-1]):
-        core = np.where(R[:, i] > 0.8)[0]
+        core = np.where((top2[:, 0] == i) & (mix > 0.8))[0]
         mid = np.median(P[core, 1])
         points = []
         for k in range(8):
@@ -593,7 +677,7 @@ def main():
     center, extent = (lo + hi) / 2, (hi - lo) / 2
     q = np.round((P - center) / extent * 32767).astype("<i2")
     header = {
-        "format": 2, "vertices": int(len(P)), "triangles": int(len(tris)),
+        "format": 3, "vertices": int(len(P)), "triangles": int(len(tris)),
         "center": [round(float(x), 6) for x in center], "extent": [round(float(x), 6) for x in extent],
         "regions": list(REGIONS), "anchors": anchors,
         "lines": {"vertices": int(len(line_P)), "triangles": int(len(line_tris))},
@@ -604,13 +688,14 @@ def main():
     }
     text = json.dumps(header, separators=(",", ":")).encode()
     text += b" " * (-len(text) % 4)
-    blob = bytearray(b"HAB2" + struct.pack("<I", len(text)) + text)
+    blob = bytearray(b"HAB3" + struct.pack("<I", len(text)) + text)
     blob += q.tobytes() + b"\0" * (-q.nbytes % 4)
     blob += np.concatenate([np.round(N * 127), np.zeros((len(P), 1))], axis=1).astype("i1").tobytes()
     extra = np.zeros((len(P), 4))
     extra[:, 0], extra[:, 1] = ao, cloth
     blob += np.round(extra * 255).astype("u1").tobytes()
-    blob += np.round(R * 255).astype("u1").tobytes()
+    regions = np.stack([top2[:, 0], top2[:, 1], np.round(mix * 255), np.zeros(len(P))], axis=1)
+    blob += regions.astype("u1").tobytes()
     assert len(P) < 65536, "triangles are uint16"
     blob += tris.astype("<u2").tobytes()
     # the muscle lines: positions as the body's, padded to 4 bytes, then their triangles

@@ -197,7 +197,11 @@ def build(ctx: Context, end: date, soreness_log: dict) -> dict:
     energy = {r["date"]: r["energy"] for r in ctx.store.rows("self_report")
               if r["date"] <= end and r.get("energy") is not None}
     log = {d: r for d, r in soreness_log.items() if d <= end}
-    regions = {region: _forecast({d: levels.get(region, 0) for d, levels in log.items()}, end, "soreness", body)
+    # an older morning check-in covered every region (one not listed was not sore); since soreness is said when felt,
+    # a region not said that day is unknown
+    whole = {r["date"] for r in ctx.store.rows("soreness") if r.get("at") is None}
+    regions = {region: _forecast({d: levels.get(region, 0) for d, levels in log.items() if d in whole or region in levels},
+                                 end, "soreness", body)
                for region in SORE_REGIONS}
     result = {"version": VERSION, "as_of": iso(end), "demo": ctx.cfg.demo,
               "energy": _forecast(energy, end, "energy", body), "soreness": regions,
